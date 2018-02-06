@@ -1,0 +1,493 @@
+%\VignetteIndexEntry{GeoXp: an R package for exploratory}
+%\VignetteDepends{}
+%\VignetteKeywords{spatial}
+%\VignettePackage{GeoXp}
+\documentclass{article}
+\usepackage{Sweave}
+\usepackage{times}
+\usepackage{mathptm}
+\usepackage{hyperref}
+\usepackage{natbib}
+
+\setkeys{Gin}{width=0.95\textwidth}
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+\newcommand{\strong}[1]{{\normalfont\fontseries{b}\selectfont #1}}
+\let\pkg=\strong
+\RequirePackage{alltt}
+\newenvironment{example}{\begin{alltt}}{\end{alltt}}
+\newenvironment{smallexample}{\begin{alltt}\small}{\end{alltt}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\def\RR{\textsf{R}\/}
+\def\SP{\texttt{S-PLUS}\/}
+\def\SS{\texttt{S}\/}
+
+\title{Some examples of use of the \pkg{GeoXp} package (version 1.5.0)}
+\author{T. Laurent\footnote{thibault.laurent@tse-fr.eu}, A. Ruiz-Gazen\footnote{anne.ruiz-gazen@tse-fr.eu} and C. Thomas-Agnan\footnote{christine.thomas@tse-fr.eu} \cr
+{\normalsize Toulouse School of Economics} }
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\maketitle
+\renewcommand{\thefootnote}{\arabic{footnote}}
+
+<<echo=FALSE>>=
+owidth <- getOption("width")
+options("width"=70)
+ow <- getOption("warn")
+options("warn"=-1)
+.PngNo <- 0
+@
+
+
+<<label=bfigl,echo=FALSE,eval=FALSE>>=
+.PngNo <- .PngNo + 1;
+file <- paste("Fig", .PngNo, ".pdf", sep="")
+file2 <- paste("Fig", .PngNo, sep="")
+pdf(file=file, width = 8, height = 8, onefile = FALSE, paper = "special")
+@
+
+
+<<label=zfigla,echo=FALSE,eval=FALSE>>=
+dev.null <- dev.off()
+cat("\\includegraphics[width=0.55\\textwidth]{", file2, "}\n\n", sep="")
+#cat("\\includegraphics[bb = 72 500 288 750]{", file, "}\n\n", sep="")
+@
+<<label=zfiglb,echo=FALSE,eval=FALSE>>=
+dev.null <- dev.off()
+cat("\\includegraphics[width=0.55\\textwidth]{", file2, "}\n\n", sep="")
+#cat("\\includegraphics[bb = 72 500 288 750]{", file, "}\n\n", sep="")
+@
+<<label=zfiglc,echo=FALSE,eval=FALSE>>=
+dev.null <- dev.off()
+cat("\\includegraphics[width=0.9\\textwidth]{", file2, "}\n\n", sep="")
+#cat("\\includegraphics[bb = 72 500 288 750]{", file, "}\n\n", sep="")
+@
+
+
+\section{Description of the basic functionalities}\label{sec1}
+\subsection{General principles}
+<<echo=FALSE,eval=TRUE,results=hide>>=
+library(GeoXp)
+@
+An interactive function\footnote{The non interactive functions included in
+\pkg{GeoXp} correspond to internal or wrap functions}
+of the \pkg{GeoXp} package can be called by using one of these following codes:
+
+\begin{itemize}
+\item \code{function(sp.obj, name.var,...,options)}, if there is only one variable of interest,
+\item \code{function(sp.obj, names.var,...,options)}, if there are several variables of interest,
+\item \code{function(sp.obj, name.var, nb.obj...,options)}, if there is one variable of interest and the use
+of a spatial weight matrix.
+\end{itemize}
+
+
+The first argument \code{sp.obj} is a Spatial Class object as defined by R. Bivand
+in \pkg{sp} package. It contains both spatial coordinates and characteristics of spatial units. \newline
+
+Presently, \pkg{GeoXp} draws a map, considering spatial units like points: a spatial unit
+is defined geographically by two scalars $x$ and $y$. Indeed,
+for drawing a map, the spatial coordinates of spatial units have been
+extracted from \code{sp.obj} by using the function \code{coordinates}, which can be applied on
+to any Spatial Class object (\code{SpatialPointsDataFrame}, \code{SpatialPolygonsDataFrame}, etc). \newline
+
+\noindent It also prints a statistical graphic. The variable(s) of interest are given by \code{name.var} or
+\code{names.var}, a (vector of) character (or numeric) which indicates the column(s) of
+the \code{sp.obj@data} to be used in the analysis. The \code{sp.obj@data} is by construction,
+a \code{data.frame}.  \newline
+
+\noindent In the function call, the \code{...} correspond to specificities of each function (more details in ~\ref{sec3}).
+For example, it could indicate the number of bars for a histogram, if the y-axis should represent or not
+the count or the percent for a barplot, etc.... \newline
+
+\noindent Finally, \code{options} are common to most of the functions (with some small
+specificities by function) and described in the following section. Let us start with a simple example.
+
+
+\subsection{An elementary use}
+This first example has been taken from the example of the \code{histomap} function.
+We consider a data set included in \pkg{GeoXp}, containing price indices of real
+estate from largest cities in France in 2008.
+
+\begin{footnotesize}
+<<echo=TRUE,eval=TRUE>>=
+data(immob)
+class(immob)
+names(immob)
+@
+\end{footnotesize}
+
+\noindent As we can see above, this data set is a \code{data.frame} containing the spatial coordinates of the
+cities in the variables \code{longitude} and \code{latitude}. It also contains  several
+variables corresponding to the city names, the selling and renting prices, etc... \newline
+
+\noindent The first operation consists in creating a Spatial Object. First, we have to
+create a \code{SpatialPoints} object by specifying a $2 \times d$ matrix with longitude and latitude:
+
+\begin{footnotesize}
+<<echo=TRUE,eval=TRUE>>=
+immob.sp <- SpatialPoints(cbind(immob$longitude, immob$latitude))
+class(immob.sp)
+@
+\end{footnotesize}
+
+\noindent The second operation consists in creating a \code{SpatialPointsDataFrame} by
+coupling a \code{SpatialPoints} object with a \code{data.frame}:
+
+\begin{footnotesize}
+<<echo=TRUE,eval=TRUE>>=
+immob.spdf <- SpatialPointsDataFrame(immob.sp, immob)
+class(immob.spdf )
+@
+\end{footnotesize}
+
+\noindent Finally, we can call the function \code{histomap} by giving as first argument, the
+Spatial Object and as second argument, we give a character (it can also be the number
+of the column, here the value 6) which corresponds to
+the name of the variable of interest. It results in the opening of a Tk window and
+two devices, a device with number 2 which corresponds to the map and a device
+with number 3 corresponding to the statistical graph, in this case, the histogram:
+
+\begin{footnotesize}
+<<echo=TRUE,eval=FALSE>>=
+histomap(immob.spdf, "prix.vente")
+@
+\end{footnotesize}
+
+\noindent As we can see in the Fig.~\ref{fig1}, the Tk window contains several buttons that the user
+can click on: the user may select a point (\code{Point} button) or a polygon (\code{Polygon} button)
+on the map and may also select a bar on the histogram (\code{Cell} button).
+In this example, the user may also print bubbles by clicking on \code{Bubbles} after
+choosing a numerical variable among the variables included in the Spatial object.
+
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[scale=0.6]{fig1}
+\end{center}
+\caption{The tk window and the two devices}\label{fig1}
+\end{figure}
+
+\subsection{Saving results}
+By default, interactive functions don't return results anymore since version 1.5.0. Presently,
+the user has to click on the \code{Save results} button to create a global object called \code{last.select}
+which is in most cases, a vector of integers containing the number of the spatial units
+selected at the final step. However, for spatial econometrics functions using a spatial weight matrix, \code{last.select}
+is a $2 \times d$ matrix, because the selection is done on couples of sites (see ~\ref{sec3}).
+
+\subsection{Functions cannot be opened simultaneously}
+At this moment, the user can only open one interactive function at a time. He has to close the
+Tk window by clicking on \code{Save results} or \code{Exit without saving} before opening
+a new function.
+
+
+\section{Description of the Options}
+\subsection{The options}
+\begin{verbatim}
+function(sp.obj,...,
+names.attr=names(sp.obj), criteria=NULL, carte=NULL,
+identify=FALSE, cex.lab=0.8, pch=16, col="lightblue3",
+xlab="angle", ylab="absolute magnitude", axes=FALSE,
+lablong="", lablat="")
+\end{verbatim}
+
+\noindent Most of these options are common to all functions. It can differ depending on the function, but the
+principles remain the same.
+ \begin{itemize}
+  \item \code{names.attr:} a vector of character of size the number of variables included in \code{sp.obj@data}.
+  The option is used for changing the variable names included in the \code{sp.obj@data}
+  \item{criteria:} a vector of boolean of size the number of spatial units; it allows to represent
+   preselected sites with a green cross, by clicking on \code{preselected sites} on the Tk window
+  \item \code{carte:} in the case where \code{sp.obj} is a \code{SpatialPolygonDataFrame}, the user will have the
+   opportunity to draw the polygons of Spatial unit by using the \code{Draw Spatial contours} button in the
+   Tk window. However, if the \code{sp.obj} is  a \code{SpatialPointsDataFrame}, the user may specify by using
+   the \code{carte} option, a matrix with 2 columns for drawing spatial polygonal contours: x and y coordinates of the
+   vertices of the polygon. The functions \code{polylist2list()} and \code{spdf2list()}
+   convert some spatial objects (\code{Polylist} and \code{SpatialPolygonDataFrame})
+   into matrices as decribed above to draw a background map.
+  \item \code{identify:} if TRUE, the names of selected sites will be printed on the map. The names of spatial units
+  correpond to \code{row.names} of the attribute table \code{row.names(sp.obj@data)}.
+  \item \code{cex.lab:} a numeric value, it gives the character size of labels
+  \item \code{pch:} 16 by default, it gives the symbol for selected points
+  \item \code{col:} "lightblue3" by default, it gives the color of the bars of a histogram, the
+  points of a scatter plot, etc... In the case where the variable of interest
+  is a factor, the user may give a vector of colors corresponding to the colors of each level to be printed
+  on the map.
+  \item \code{xlab:} a character, title for the graphic x-axis
+  \item \code{ylab:} a character, title for the graphic y-axis
+  \item \code{axes:} a boolean with TRUE for drawing axes on the map
+  \item \code{lablong:} a character, name of the x-axis that will be printed on the map
+  \item \code{lablat:} a character, name of the y-axis that will be printed on the map
+\end{itemize}
+
+\subsection{An example with options}
+We consider the data set \code{immob} again. We would like to draw as background on the map
+the spatial contours of the 21 regions in the metropolitan France\footnote{We have excluded here the regions
+22 and 23 which corresponds to the Corse and Andorre} included in a \code{shapefile}.
+For this, we first use the function \code{readShapePoly}, included in the \pkg{maptools}
+package, to import the file. Then, we use the function \code{spdf2list} to convert
+the \code{SpatialPolygonsDataFrame} into a matrix of numeric with 2 columns ($x$ and $y$):
+
+\begin{footnotesize}
+<<echo=TRUE,eval=TRUE>>=
+require("rgdal")
+midiP <- readOGR(system.file("shapes/region.shp", package="GeoXp")[1])
+cont_midiP <- spdf2list(midiP[-c(22,23),])$poly
+@
+\end{footnotesize}
+
+\noindent We also create a vector of boolean which cuts approximately the France in two areas,
+North and South:
+\begin{footnotesize}
+<<echo=TRUE,eval=TRUE>>=
+criteria <- (immob$latitude > mean(immob$latitude))
+@
+\end{footnotesize}
+
+\noindent In the following code, the option \code{nbcol=15} and \code{type = "percent"} are specific
+to the function \code{histomap}. The first one indicates the number of bars to draw and the second
+the fact that the y-axis of the graphic should represent the percentage of individuals. Notice that
+the variable of interest corresponds here to the 7th variable of the \code{sp.obj},
+i.e. the variation of selling price observed between 2007 and 2008.
+
+\begin{footnotesize}
+<<echo=TRUE,eval=FALSE>>=
+histomap(immob.spdf, 7, nbcol = 15, type = "percent",
+ names.attr = names(immob), criteria = criteria, carte = cont_midiP,
+ identify = TRUE, cex.lab = 0.5, pch = 12, col = "pink",
+ xlab = "variation price", ylab = "percent", axes = TRUE, lablong = "x",
+ lablat = "y")
+@
+\end{footnotesize}
+
+
+\noindent On Fig.~\ref{fig2}, we have represented the two devices after selecting the
+bars with high values of the variable of interest, clicking on the \code{Bubbles} button (and choosing
+the variable \code{prix.vente}, average selling price) and clicking on the \code{Preselected sites} button.  \newline
+
+\noindent The result on the map and on the graphic is that the selected spatial units are represented in red.
+Besides on the map, the sites have different sizes depending on the values taken by
+\code{prix.vente} and there is a green croice for the cities of the North. \newline
+
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[width=6cm]{fig2}
+\includegraphics[width=6cm]{fig3}
+\end{center}
+\caption{The use of options in the \code{histomap} function}\label{fig2}
+\end{figure}
+
+\noindent If the user clicks on the \code{Save results} button, he obtains the following message and
+can use the \code{last.select} object thus created:
+
+\begin{footnotesize}
+<<echo=FALSE,eval=TRUE>>=
+last.select <- c(12, 18, 24, 31, 32, 37, 39, 42, 
+                 49, 67, 73, 74, 79, 81, 84)
+@
+\end{footnotesize}
+
+\begin{footnotesize}
+<<echo=FALSE,eval=TRUE>>=
+print("Results have been saved in last.select object")
+@
+<<echo=TRUE,eval=TRUE>>=
+last.select
+@
+\end{footnotesize}
+
+\section{The main functions of GeoXp}\label{sec3}
+We succinctly describe here the statistical graphic, the specific options and the dependencies
+with other packages.
+\subsection{Functions with one variable of interest}
+\begin{itemize}
+\item \code{angleplotmap}: absolute difference between the value of \code{name.var}
+at two sites as a function of the angle between vector $\overrightarrow{s_is_j}$
+and the x-axis. A specific option is \code{quantiles}, for drawing a
+conditionnal quantile curve.
+\item \code{barmap}: bar plot (vertical bar) of the given factor variable
+\code{name.var}. Specific options are \code{type} to specify the type of the value on
+the y-axis (count or percent) and \code{names.arg} to specify the names of levels of \code{name.var}.
+\item \code{boxplotmap}: boxplot of the given variable $name.var$.
+\item \code{densitymap}: kernel density estimates of the variable \code{name.var} with
+the \code{bkde} function of the \pkg{KernSmooth} package. A specific option is \code{kernel} for
+the choice of kernel.
+\item \code{driftmap}: the device is divided into 2 rows and 2 columns which contains :
+\begin{itemize}
+\item cell 1:the selected sites divided into $m$ rows and $q$ columns ($m$ and $q$ are selected with the tk window),
+\item cell 2: a scatter plot with \code{coordinates(sp.obj)[,2]} on the x-axis and the mean and median of \code{name.var}
+calculated for the $m$ rows on the y-axis,
+\item cell 3: a scatter plot with the mean and
+median of \code{name.var} calculated for the $q$ columns in x-axis and \code{coordinates(sp.obj)[,1]}
+in y-axis,
+\item cell 4: a legend indicating the direction of the North. Specific options are
+\code{name.var}, \code{interpol=TRUE}, \code{nuage=TRUE}, \code{lty=1:2}, \code{cex=0.7} (see the help
+of the function for more details).
+\end{itemize}
+\item \code{ginimap}: Lorentz curve from \code{name.var}
+and calculates the Gini Index associated to \code{name.var}.
+\item \code{histomap}: histogram of a given variable \code{name.var}. Specific options are
+\code{nbcol} for the number of bars and \code{type} for the values to print on the y-axis (\code{count},
+\code{percent} or \code{density})
+\item \code{variocloudmap}: semi-variocloud (directional or omnidirectional) and a map. Specific
+options are \code{bin} which indicates the values on the x-axis where the variocloud will be evaluated and
+\code{quantiles} for drawing a conditionnal quantile curve.
+\end{itemize}
+
+\subsection{Functions with several variables of interest}
+\begin{itemize}
+\item \code{clustermap}: classification of the sites from the variables included
+in \code{names.var} and computes a bar plot of the resulting clusters. Specific options
+are \code{clustnum} which gives the number of cluster, \code{method},  which gives the method to use,
+\code{type}, \code{center}, \code{scale} which gives indication on the method (see \code{help(clustermap)}) and \code{names.arg}.
+\item \code{dbledensitymap}: two kernel density estimates from 2 variables.
+Specific option is \code{kernel} for
+the choice of kernel.
+\item \code{dblehistomap}: two histograms of the given variables \code{names.var[1]} and
+\code{names.var[2]}. Specific options are \code{nbcol} and \code{type}.
+\item \code{histobarmap}: bar plot (vertical bar) of the given variable
+\code{names.var[1]} and histogram of the given variable \code{names.var[2]}. Specific options are
+\code{type} and \code{names.arg}.
+\item \code{pcamap}: plots summarizing a generalized Principal Component Analysis (PCA),
+made with \code{genpca} (wrap function). It draws the scatterplot of the individuals projected on a chosen principal
+component plane (with their percentage of inertia), together with the scatterplot of the variables
+projected into the same plane with the quality of representation in order to interpret the principal
+component axes. Specific options are \code{direct}, \code{weight}, \code{metric}, \code{center}, \code{reduce}
+and \code{qualproj} (see \code{help(pcamap)}).
+\item \code{plot3dmap}:  3d-plot of three given variables $names.var$. Specific options are \code{box}
+for drawing a cube and \code{zlab}. It depends on the package \pkg{rgl}.
+\item \code{polyboxplotmap}: parallel Boxplots of a numerical variable by levels of a factor. Specific options are
+\code{varwidth} and \code{names.arg}
+\item \code{scattermap}: scatterplot of the given variables indicated in \code{names.var}.
+\end{itemize}
+
+\paragraph{An example of multivariate function \newline}
+We consider the function \code{debledensitymap}. It takes as argument a \code{Spatial} object
+and a vector of character with the name (or the column numbers) of the variables:
+\begin{footnotesize}
+<<echo=TRUE,eval=FALSE>>=
+dbledensitymap(immob.spdf, c("prix.vente", "prix.location"),
+               xlab = c("selling price", "rending price"), 
+               identify = TRUE, cex.lab = 0.5, carte = cont_midiP)
+@
+\end{footnotesize}
+
+In this example, we have selected on the first density distribution estimation,
+by clicking directly on the graphic, cities with a selling price lower than 2000.
+The corresponding sub-density of this selection has been drawn on the second graphic.
+
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[width=6cm]{fig2b}
+\includegraphics[width=6cm]{fig2c}    \newline
+\includegraphics[width=6cm]{fig2d}
+\end{center}
+\caption{example of the \code{dbledensitymap} function}\label{fig3b}
+\end{figure}
+
+\subsection{Function with variable(s) of interest and a spatial weight matrix}
+\begin{itemize}
+\item \code{misolationmap}: scatterplot with the pairwise Mahalanobis distances calculated using
+variables \code{names.var} between the observations and their neighbors on the y-axis and the ``degree of isolation'' of the observations on
+the x-axis. It depends on \pkg{mvoutlier} and \pkg{robustbase} packages. Specific options are \code{propneighb} and \code{chisqqu}
+\item \code{moranplotmap}: moran plot, on the x-axis, is represented $x$
+and on the y-axis $W \times x$, where $W$ is the spatial weight matrix.
+It also calcultes Moran's I statistic (see \code{nonnormoran}) and
+give a p-value associated to the autocorrelation test (gaussian version and permutation version).  Specific options are \code{flower},
+\code{locmoran} and \code{names.arg}.
+\item \code{mvariocloudmap}: scatterplot of pairwise Mahalanobis
+distances and spatial distances with a map. It is a multivariate version of the
+variocloud. The number of couples of sites plotted can be reduced by considering
+couples above a quantile regression curve. It depends on \pkg{mvoutlier} and \pkg{robustbase} packages.
+A specific option is \code{quantiles}.
+\item \code{neighbourmap}: scatterplot of the values of the
+variable at neighbouring sites for a neighbourhood structure given by a binary weight matrix $W$.
+\end{itemize}
+
+\noindent The two functions \code{barnbmap} and
+\code{histnbmap} analyse a spatial neigborhood structure and have not a \code{name.var}
+argument.
+
+\subsection{Other dependencies}
+The quantile spline regression drawn on the scatterplot with option \code{quantiles}
+comes from the function \code{qsreg} included in the \pkg{fields} package. The \pkg{splancs} package
+is called for the use of the \code{inout} function.
+
+\section{A example of Spatial econometric function}\label{sec4}
+We present here the example proposed by the \code{neighbourmap}
+function using the same data set \code{immob}.
+
+\subsection{Construction of a spatial weight matrix}
+The package \pkg{spdep} contains several functions for building spatial weight matrices.
+These functions create an \code{nb} object which corresponds to the class used in the \pkg{GeoXp}
+functions. For example, the \code{tri2nb} function builds a spatial weight matrix based on
+ the Delaunay triangulation:
+
+\begin{footnotesize}
+<<echo=TRUE,eval=TRUE>>=
+W.nb <- tri2nb(cbind(immob$longitude, immob$latitude))
+class(W.nb)
+@
+\end{footnotesize}
+
+\noindent With \pkg{GeoXp}, the function \code{makeneighborsw} builds a spatial weight matrix
+by using both methods of the nearest neighbors and the threshold distance. However, the result
+is included in a \code{matrix} object and the user will have to convert this object into
+an \code{nb} object by using the function \code{mat2listw}, as follows:
+
+\begin{footnotesize}
+<<echo=TRUE,eval=TRUE>>=
+W2.matrix <- makeneighborsw(cbind(immob$longitude, immob$latitude),
+                            method = "both", m = 5, d = 175000)
+W2.nb <- mat2listw(W2.matrix)$neighbours
+class(W2.nb)
+@
+\end{footnotesize}
+
+\noindent Note that the functions \code{histnbmap} and \code{barnbmap} included in \pkg{GeoXp}
+allow an interactive exploratory analysis of the neighborhood structure given by an \code{nb}
+object.
+
+\subsection{Example of use of a spatial econometric function}
+In the following example, we consider the variable ``average selling price of a house by square meter''
+and use the \code{neighbourmap}. We indicate as third element, the spatial weight matrix of
+ class \code{nb}.
+\begin{footnotesize}
+<<echo=TRUE,eval=FALSE>>=
+neighbourmap(immob.spdf, "prix.vente", W.nb, identify = TRUE, cex.lab = 0.5,
+ carte = cont_midiP)
+@
+\end{footnotesize}
+
+\noindent In this example, we have selected two cities on the map. The value of the city
+observed in the North  corresponds on the scatterplot to the axis of the first column of
+points represented in red. The points represented in red in this column corresponds to the
+neighbours of the city selected on the map. The fact that the points are located above the line $y=x$
+means that the city selected is a local ``outlier'' in the sense that the value taken is lower than
+its neighbours. For the second city selected in the South, it is the reverse.  \newline
+
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[width=6cm]{fig4}
+\includegraphics[width=6cm]{fig5}
+\end{center}
+\caption{The use of options in histomap function}\label{fig3}
+\end{figure}
+
+\noindent In this case, when the user selects the \code{Save result} button, it creates in the \code{last.select}
+object a matrix containing the couples of selected sites:
+\begin{footnotesize}
+<<echo=FALSE,eval=TRUE>>=
+last.select<-matrix(c(3, 17, 3, 38, 3, 39, 3, 40, 3, 63, 3, 70, 3,
+                      90, 85, 53, 85, 58, 85, 65, 85, 66, 85, 73), 12, 2,
+                    byrow = TRUE)
+@
+\end{footnotesize}
+
+\begin{footnotesize}
+<<echo=FALSE,eval=TRUE>>=
+print("Results have been saved in last.select object")
+@
+<<echo=TRUE,eval=TRUE>>=
+last.select
+@
+\end{footnotesize}
+
+\end{document}

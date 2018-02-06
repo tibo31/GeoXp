@@ -1,0 +1,21 @@
+citHeader("To cite GeoXp in publications use:")
+
+citEntry(entry = "Article",
+  title        = "{GeoXp}: An {R} Package for Exploratory Spatial Data Analysis",
+  author       = personList(as.person("Thibault Laurent"),
+                   as.person("Anne Ruiz-Gazen"),
+                   as.person("Christine Thomas-Agnan")),
+  journal      = "Journal of Statistical Software",
+  year         = "2012",
+  volume       = "47",
+  number       = "2",
+  pages        = "1--23",
+  url          = "http://www.jstatsoft.org/v47/i02/",
+
+  textVersion  =
+  paste("Thibault Laurent, Anne Ruiz-Gazen, Christine Thomas-Agnan (2012).",
+        "GeoXp: An R Package for Exploratory Spatial Data Analysis.",
+        "Journal of Statistical Software, 47(2), 1-23.",
+        "URL http://www.jstatsoft.org/v47/i02/.")
+)
+

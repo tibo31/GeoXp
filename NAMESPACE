@@ -1,0 +1,53 @@
+import(spdep, spData, stats, tcltk)
+importFrom(rgeos, gContains)
+importFrom(quantreg, rqss, plot.rqss, sfn.control)
+importFrom(rgl, bg3d, par3d, plot3d, rgl.close, rgl.postscript, rotationMatrix)
+importFrom(KernSmooth, bkde)
+importFrom(robustbase, covMcd)
+importFrom(splancs, inout)
+importFrom(grDevices, colors, dev.list, dev.new, dev.set, dev.off, heat.colors, pdf)
+importFrom(graphics, abline, axis, barplot, boxplot, layout, legend, lines, locator, par, plot, points, polygon, rect, segments, text, title)
+importFrom(sp, coordinates, CRS, is.projected, plot, proj4string, SpatialPoints)
+export(
+angleplotmap,
+barmap,
+barnbmap,
+boxplotmap,
+carte,
+choix.bubble,
+choix.couleur,
+choixvarfunc,
+clustermap,
+dbledensitymap,
+dblehistomap,
+densitymap,
+driftmap,
+genpca,
+gini,
+ginimap,
+graphique,
+histnbmap,
+histobarmap,
+histomap,
+makeneighborsw,
+misolationmap,
+moranplotmap,
+mvariocloudmap,
+neighbourmap,
+nonormmoran,
+normw,
+pcamap,
+plot3dmap,
+polyboxplotmap,
+polylist2list,
+rotation,
+scattermap,
+selectgraph,
+selectmap,
+selectstat,
+slider1,
+spdf2list,
+variocloudmap
+)
+
+
