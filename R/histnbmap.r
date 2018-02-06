@@ -57,8 +57,23 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
   lat <- coords[, 2]
   
   obs <- matrix(FALSE, nrow = n.nb, ncol = n.nb)
-  
   graf <- "Neighbourplot1"
+  
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = baseenv()) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = baseenv())
+    } else {
+      if (get("GeoXp.open", envir = baseenv())) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = baseenv())
+      }
+    }
+  }
   
   # Windows device
   if(length(dev.list()) == 0 & options("device") == "RStudioGD")
@@ -423,39 +438,17 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
   ####################################################
   # Graphique de base
   ####################################################
-  # Is there a Tk window already open ?
-  if (interactive()) {
-    if (!exists("GeoXp.open", envir = baseenv()) || 
-        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
+
+  carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
             lablong = lablong, lablat = lablat, label = label, symbol = pch,
             method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
             legmap = legmap, legends = legends, buble = buble, criteria = criteria,
             nointer = nointer, cbuble = z, carte = carte, nocart = nocart)
       
-      graphique(var1 = nb, var2 = dlist, obs = obs, num = num_graph, 
+  graphique(var1 = nb, var2 = dlist, obs = obs, num = num_graph, 
                 bin = type, graph = "histo.nb", nbcol = nbcol, W = W,
                 labvar = labvar, symbol = pch, couleurs = col)
-      assign("GeoXp.open", TRUE, envir = baseenv())
-    } else {
-      if (get("GeoXp.open",envir= baseenv())) {
-        stop("Warning : a GeoXp function is already open. 
-             Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
-        } else { 
-          carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
-                lablong = lablong, lablat = lablat, label = label, symbol = pch, 
-                method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
-                legmap = legmap, legends = legends, buble = buble, criteria = criteria,
-                nointer = nointer, cbuble = z, carte = carte, nocart = nocart)
-        
-          graphique(var1 = nb, var2 = dlist, obs = obs, num = num_graph, 
-                    bin = type, graph = "histo.nb", nbcol = nbcol, W = W, 
-                    labvar = labvar, symbol = pch, couleurs = col) 
-          assign("GeoXp.open", TRUE, envir = baseenv())
-        }
-    }
-  }
-  
+ 
   ####################################################
   # Boite de Dialogue
   ####################################################

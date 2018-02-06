@@ -1,4 +1,4 @@
-`dblehistomap` <- function(sp.obj, names.var, nbcol = c(10,10), type = c("count", "percent", "density"),
+dblehistomap <- function(sp.obj, names.var, nbcol = c(10,10), type = c("count", "percent", "density"),
                            names.attr = names(sp.obj), criteria = NULL, carte = NULL, identify = FALSE, 
                            cex.lab = 0.8, pch = 16, col = c("grey","lightblue3"), xlab = c("", ""), 
                            ylab = c("count", "count"), axes = FALSE, lablong = "", lablat = "") {
@@ -66,6 +66,22 @@
   if ((length(listvar) > 0) &&
       (dim(as.matrix(listvar))[2] == 1))
     listvar <- as.matrix(listvar)
+  
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = baseenv()) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = baseenv())
+    } else {
+      if (get("GeoXp.open", envir = baseenv())) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = baseenv())
+      }
+    }
+  }
   
   # Windows device
   if(length(dev.list()) == 0 & options("device") == "RStudioGD")
@@ -561,48 +577,21 @@
   # graphiques
   ####################################################
   
-  # Is there a Tk window already open ?
-  if(interactive()) {
-    if(!exists("GeoXp.open", envir = baseenv()) || length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
-      carte(long = long, lat = lat, obs = obs, num = num_carte, sp.obj = sp.obj, 
+  carte(long = long, lat = lat, obs = obs, num = num_carte, sp.obj = sp.obj, 
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer,  
             label = label, symbol = pch2, couleurs = col2, carte = carte, nocart = nocart,
             legmap = legmap, legends = legends, axis = axes, labmod = labmod, 
             lablong = lablong, lablat = lablat, cex.lab = cex.lab, method = method,
             classe = listvar[, which(listnomvar == varChoice1)])
       
-      graphique(var1 = var1, obs = obs, num = num_graph, 
+  graphique(var1 = var1, obs = obs, num = num_graph, 
                 graph = "Histogram", nbcol = nbcol[1], 
                 bin = type, labvar = labvar1, couleurs = col[1])
       
-      graphique(var1 = var2, obs = obs, num = num_graph_2, 
+  graphique(var1 = var2, obs = obs, num = num_graph_2, 
                 graph = "Histogram",nbcol = nbcol[2],
                 bin = type, labvar = labvar2, couleurs = col[2])
       
-      assign("GeoXp.open", TRUE, envir = baseenv())
-    } else {
-      if (get("GeoXp.open", envir = baseenv())) {
-        stop("Warning : a GeoXp function is already open. 
-             Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
-        } else {
-          carte(long = long, lat = lat, obs = obs, num = num_carte, sp.obj = sp.obj, 
-                buble = buble, cbuble = z, criteria = criteria, nointer = nointer,  
-                label = label, symbol = pch2, couleurs = col2, carte = carte, nocart = nocart,
-                legmap = legmap, legends = legends, axis = axes, labmod = labmod, 
-                lablong = lablong, lablat = lablat, cex.lab = cex.lab, method = method,
-                classe = listvar[, which(listnomvar == varChoice1)])
-          
-          graphique(var1 = var1, obs = obs, num = num_graph, 
-                    graph = "Histogram", nbcol = nbcol[1], 
-                    bin = type, labvar = labvar1, couleurs = col[1])
-          
-          graphique(var1 = var2, obs = obs, num = num_graph_2, 
-                    graph = "Histogram",nbcol = nbcol[2],
-                    bin = type, labvar = labvar2, couleurs = col[2])
-          
-          assign("GeoXp.open", TRUE, envir = baseenv())}
-    }
-  }
   
   ####################################################
   # creation de la boite de dialogue

@@ -65,6 +65,22 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
   
   directionnel <- FALSE
   
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = baseenv()) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = baseenv())
+    } else {
+      if (get("GeoXp.open", envir = baseenv())) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = baseenv())
+      }
+    }
+  }
+  
   # Windows device
   if (length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
@@ -423,38 +439,16 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
   ####################################################
   # Repreentation Graphique
   ####################################################
-  # Is there a Tk window already open ?
-  
-  if (interactive()) {
-    if(!exists("GeoXp.open", envir = baseenv()) || length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
-      graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
+
+  graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
                 graph = "Variocloud", labvar = labvar, symbol = pch, couleurs=col, quantiles = quantiles, 
                 alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)  
       
-      carte(long = long, lat = lat, obs = obs, num = num_carte, lablong = lablong, lablat = lablat, 
+  carte(long = long, lat = lat, obs = obs, num = num_carte, lablong = lablong, lablat = lablat, 
             label = label, buble = buble, criteria = criteria, nointer = nointer, cbuble = z,
             carte = carte, nocart = nocart, cex.lab = cex.lab, method = "Variocloud",
             axis = axes, legmap = legmap, legends = legends)
 
-      assign("GeoXp.open", TRUE, envir = baseenv())
-    } else {
-      if (get("GeoXp.open", envir = baseenv())) {
-        stop("Warning : a GeoXp function is already open. 
-             Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
-        } else { 
-        graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
-                  graph = "Variocloud", labvar = labvar, symbol = pch, couleurs=col, quantiles = quantiles, 
-                  alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)   
-        
-        carte(long = long, lat = lat, obs = obs, num = num_carte, lablong = lablong, lablat = lablat, 
-              label = label, buble = buble, criteria = criteria, nointer = nointer, cbuble = z,
-              carte = carte, nocart = nocart, cex.lab = cex.lab, method = "Variocloud",
-              axis = axes, legmap = legmap, legends = legends)
-        
-        assign("GeoXp.open", TRUE, envir = baseenv())}
-    }
-  }
-  
   ####################################################
   # creation de la boite de dialogue
   ####################################################

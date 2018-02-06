@@ -68,6 +68,22 @@ barmap <- function(sp.obj, name.var, type = c("count", "percent"), names.arg = "
       (dim(as.matrix(listvar))[2] == 1))
     listvar <- as.matrix(listvar)
   
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = baseenv()) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = baseenv())
+    } else {
+      if (get("GeoXp.open", envir = baseenv())) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = baseenv())
+      }
+    }
+  }
+  
   # Windows device
   if(length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
@@ -446,10 +462,6 @@ barmap <- function(sp.obj, name.var, type = c("count", "percent"), names.arg = "
   # Representation des graphiques
   ####################################################
   
-  # Is there a Tk window already open ?
-  if (interactive()) {
-    if (!exists("GeoXp.open", envir = baseenv()) ||
-        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
       carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte,
             cbuble = z, criteria = criteria, nointer = nointer, obs = obs, lablong = lablong, 
             lablat = lablat, label = label, symbol = pch, carte = carte, nocart = nocart,
@@ -459,23 +471,6 @@ barmap <- function(sp.obj, name.var, type = c("count", "percent"), names.arg = "
       graphique(var1 = var, obs = obs, num = num_graph, graph = "Barplot", bin = type, labvar = labvar,
                 symbol = pch, labmod = names.arg, couleurs = col)
       
-      assign("GeoXp.open", TRUE, envir = baseenv())
-    } else {
-      if (get("GeoXp.open", envir = baseenv())) {
-        stop("Warning : a GeoXp function is already open. Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
-      } else {
-        carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte,
-              cbuble = z, criteria = criteria, nointer = nointer, obs = obs, lablong = lablong, 
-              lablat = lablat, label = label, symbol = pch, carte = carte, nocart = nocart,
-              method = "Cluster", classe = var, couleurs = col2, legmap = legmap,
-              legends = legends, labmod = names.arg, axis = axes, cex.lab = cex.lab)
-        
-        graphique(var1 = var, obs = obs, num = num_graph, graph = "Barplot", bin = type, labvar = labvar,
-                  symbol = pch, labmod = names.arg, couleurs = col)
-        assign("GeoXp.open", TRUE, envir = baseenv())
-      }
-    }
-  }
   
   ####################################################
   # creation de la boite de dialogue to create legens

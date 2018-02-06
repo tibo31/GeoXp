@@ -29,7 +29,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
     } else {
       if (get("GeoXp.open", envir = baseenv())) {
         stop(
-          "Warning : a GeoXp function is already open. Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics"
+          "A GeoXp function is already open. Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics"
         )
       } else
         assign("GeoXp.open", TRUE, envir = baseenv())

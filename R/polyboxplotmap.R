@@ -71,6 +71,22 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
       (dim(as.matrix(listvar))[2] == 1))
     listvar <- as.matrix(listvar)
   
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = baseenv()) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = baseenv())
+    } else {
+      if (get("GeoXp.open", envir = baseenv())) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = baseenv())
+      }
+    }
+  }
+  
   # Windows device
   if (length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
@@ -314,36 +330,14 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
   # representation graphique
   ####################################################
   
-  # Is there a Tk window already open ?
-  if(interactive()) {
-    if(!exists("GeoXp.open", envir = baseenv()) || 
-       length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
-      graphique(var1 = var2, var2 = var1, obs = obs, num = num_graph, graph = "Polyboxplot",
+  graphique(var1 = var2, var2 = var1, obs = obs, num = num_graph, graph = "Polyboxplot",
                 labvar = labvar, symbol = pch, couleurs = col, labmod = names.arg, bin = varwidth)
       
-      carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte, 
+  carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte, 
             cbuble = z, criteria = criteria, nointer = nointer, obs = obs,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, carte = carte, 
             nocart = nocart, method = "Cluster", classe = var1, couleurs = col,
             legmap = legmap, legends = legends, labmod = names.arg, axis = axes, cex.lab = cex.lab)
-      
-      assign("GeoXp.open", TRUE, envir = baseenv())
-    } else {
-      if (get("GeoXp.open", envir = baseenv())) {
-        stop("Warning : a GeoXp function is already open. 
-             Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
-        } else {
-        graphique(var1 = var2, var2 = var1, obs = obs, num = num_graph, graph = "Polyboxplot",
-                  labvar = labvar, symbol = pch, couleurs = col, labmod = names.arg, bin = varwidth)
-        
-        carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte, 
-              cbuble = z, criteria = criteria, nointer = nointer, obs = obs,
-              lablong = lablong, lablat = lablat, label = label, symbol = pch, carte = carte, 
-              nocart = nocart, method = "Cluster", classe = var1, couleurs = col,
-              legmap = legmap, legends = legends, labmod = names.arg, axis = axes, cex.lab = cex.lab)
-        assign("GeoXp.open", TRUE, envir = baseenv())}
-    }
-  }
   
   ####################################################
   # Legende ou non ?

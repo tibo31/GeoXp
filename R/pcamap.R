@@ -61,6 +61,22 @@ pcamap <- function(sp.obj, names.var, direct = c(1, 2), weight = rep(1/nrow(sp.o
   labmod <- ""
   pch2 <- pch[1]
   
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = baseenv()) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = baseenv())
+    } else {
+      if (get("GeoXp.open", envir = baseenv())) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = baseenv())
+      }
+    }
+  }
+  
   # Windows device
   if(length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
@@ -554,55 +570,23 @@ pcamap <- function(sp.obj, names.var, direct = c(1, 2), weight = rep(1/nrow(sp.o
   # Representation graphique
   ####################################################
   
-  # Is there a Tk window already open ?
-  if (interactive()) {
-    if (!exists("GeoXp.open",envir = baseenv()) || length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
-      # graphiques
-      graphique(var1 = casecoord1, var2 = casecoord2, obs = obs, num = num_graph1, graph = "Acp1",
+  graphique(var1 = casecoord1, var2 = casecoord2, obs = obs, num = num_graph1, graph = "Acp1",
                 symbol = pch, labmod = casequalperc, direct = direct, inertie = inertpartperc, label = qualproj, cex.lab = cex.lab,
                 labvar = labvar, couleurs = col)   
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, buble = buble, cbuble = z,
+  carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, buble = buble, cbuble = z,
             criteria = criteria, nointer = nointer, label = label, symbol = pch2, couleurs = col2, 
             carte = carte, nocart = nocart, legmap = legmap, legends = legends, axis = axes, 
             labmod = labmod, lablong = lablong, lablat = lablat, cex.lab = cex.lab, method = method,
             classe = listvar[, which(listnomvar == varChoice1)]) 
       
-      if (length(name.dataset) != dim(dataset)[2]) {
+  if (length(name.dataset) != dim(dataset)[2]) {
         graphique(var1 = varcoord[, direct[1]], var2 = varcoord[, direct[2]], obs = obs, num = num_graph2, graph = "Acp2", labvar = labvar, 
                  legmap = noms, cex.lab = cex.lab, labmod = varqualperc, direct = direct, inertie = inertpartperc, couleurs = col)
         } else {
           graphique(var1 = varcoord[, direct[1]], var2 = varcoord[, direct[2]], obs = obs, num = num_graph2, graph = "Acp2", labvar = labvar, 
                     legmap = name.dataset, cex.lab = cex.lab, labmod = varqualperc, direct = direct, inertie = inertpartperc, couleurs = col)
           }
-      assign("GeoXp.open", TRUE, envir = baseenv())
-    } else {
-      if (get("GeoXp.open", envir = baseenv())) {
-        stop("Warning : a GeoXp function is already open. 
-             Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
-        } else {  # graphiques
-        graphique(var1 = casecoord1, var2 = casecoord2, obs = obs, num = num_graph1, graph = "Acp1",
-                  symbol = pch, labmod = casequalperc, direct = direct, inertie = inertpartperc, label = qualproj, cex.lab = cex.lab,
-                  labvar = labvar, couleurs = col)   
-          
-        carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, buble = buble, cbuble = z,
-              criteria = criteria, nointer = nointer, label = label, symbol = pch2, couleurs = col2, 
-              carte = carte, nocart = nocart, legmap = legmap, legends = legends, axis = axes, 
-              labmod = labmod, lablong = lablong, lablat = lablat, cex.lab = cex.lab, method = method,
-              classe = listvar[, which(listnomvar == varChoice1)]) 
-        
-        if(length(name.dataset)!=dim(dataset)[2]){
-          graphique(var1 = varcoord[, direct[1]], var2 = varcoord[, direct[2]], obs = obs, num = num_graph2, graph = "Acp2", labvar = labvar, 
-                    legmap = noms, cex.lab = cex.lab, labmod = varqualperc, direct = direct, inertie = inertpartperc, couleurs = col)
-          } else {
-            graphique(var1 = varcoord[, direct[1]], var2 = varcoord[, direct[2]], obs = obs, num = num_graph2, graph = "Acp2", labvar = labvar, 
-                      legmap = name.dataset, cex.lab = cex.lab, labmod = varqualperc, direct = direct, inertie = inertpartperc, couleurs = col)
-            }
-        assign("GeoXp.open", TRUE, envir = baseenv())
-        }
-    }
-  }
-  
   ####################################################
   # creation de la boite de dialogue
   ####################################################

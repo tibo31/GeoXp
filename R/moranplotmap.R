@@ -79,6 +79,22 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
   choix <- ""
   listgraph <- c("Histogram", "Barplot", "Scatterplot")
   
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = baseenv()) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = baseenv())
+    } else {
+      if (get("GeoXp.open", envir = baseenv())) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = baseenv())
+      }
+    }
+  }
+  
   # Windows device
   if(length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
@@ -99,7 +115,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
     listvar <- as.matrix(listvar)
   
   # Option sur le moran
-  ifelse(flower, method <- "Neighbourplot1", method <- "")
+  method <- ifelse(flower, "Neighbourplot1", "")
   
   choix.col <- FALSE
   
@@ -414,7 +430,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
   
   quad4func <- function() {
     num <<- 4
-    method <<- ifelse(flower,"Neighbourplot1","Quadrant") 
+    method <<- ifelse(flower, "Neighbourplot1", "Quadrant") 
     quadfunc()
   }
   
@@ -708,39 +724,17 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
   #################################################
   ###########   Representation
   
-  # Is there a Tk window already open ?
-  if (interactive()) {
-    if (!exists("GeoXp.open", envir = baseenv()) || 
-        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+
+  carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
             carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
             W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
             nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
             label = label, cex.lab = cex.lab, labmod = names.arg)   
       
-      graphique(var1 = var, var2 = wvar, var3 = ilocal, obs = obs, num = num_graph,
+  graphique(var1 = var, var2 = wvar, var3 = ilocal, obs = obs, num = num_graph,
                 graph = graph, labvar = labvar, couleurs = col2, symbol = pch2, 
                 locmoran = locmoran, obsq = obsq, cex.lab = cex.lab, buble = buble2, cbuble = z2, 
                 legmap = legmap2, legends = legends2, bin = is.norm)
-      assign("GeoXp.open", TRUE, envir = baseenv())
-    } else {
-      if (get("GeoXp.open",envir= baseenv())) {
-        stop("Warning : a GeoXp function is already open. 
-             Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
-        } else {
-        carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
-              carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
-              W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
-              nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
-              label = label, cex.lab = cex.lab, labmod = names.arg)   
-        graphique(var1 = var, var2 = wvar,  var3 = ilocal, obs = obs, num = num_graph, graph = "Moran", 
-                  labvar = labvar, couleurs = col2, symbol = pch2, locmoran = locmoran, obsq = obsq,
-                  buble = buble2, cbuble = z2, legmap = legmap2, legends = legends2, bin = is.norm)
-        assign("GeoXp.open", TRUE, envir = baseenv())
-        }
-    }
-  }
-  
   
   ####################################################
   # cr?ation de la boite de dialogue
@@ -777,7 +771,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
     LH.but <- tkbutton(frame1d, text = "H.-L.", command = quad4func)
     LL.but <- tkbutton(frame1d, text = "L.-L.", command = quad3func)
     HL.but <- tkbutton(frame1d, text = "L.-H.", command = quad2func)
-    tkpack(HH.but,LH.but,LL.but,HL.but, side = "left", expand = "TRUE",fill = "x")
+    tkpack(HH.but, LH.but, LL.but, HL.but, side = "left", expand = "TRUE", fill = "x")
     tkpack(frame1d, expand = "TRUE", fill = "x")
     
     frame1b <- tkframe(tt, relief = "groove", borderwidth = 2, background = "white")

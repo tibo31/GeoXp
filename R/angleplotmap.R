@@ -58,6 +58,22 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
   if((length(listvar) > 0) && (dim(as.matrix(listvar))[2] == 1)) 
     listvar <- as.matrix(listvar)
   
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = baseenv()) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = baseenv())
+    } else {
+      if (get("GeoXp.open", envir = baseenv())) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = baseenv())
+      }
+    }
+  }
+  
   # Windows device
   if(length(dev.list()) == 0)
     dev.new()
@@ -346,11 +362,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
   ####################################################
   # Representation graphique
   ####################################################
-  # Is there a Tk window already open ?
-  if(interactive()) {
-    if (!exists("GeoXp.open", envir = baseenv()) || 
-        length(ls(envir=.TkRoot$env, all.names = TRUE)) == 2)  # new environment
-    {
+  
       carte(long = long, lat = lat, obs = obs,  num = num_carte, buble = buble, 
             criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
             nocart = nocart, lablong = lablong, lablat = lablat, label = label,
@@ -361,24 +373,6 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
                 graph = "Angleplot", labvar = labvar, couleurs = col, 
                 symbol = pch, quantiles = quantiles, alpha1 = alpha)
       
-      assign("GeoXp.open", TRUE, envir = baseenv())
-    } else {
-      if (get("GeoXp.open", envir = baseenv())) {
-        stop("Warning : a GeoXp function is already open. Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
-        } else {
-        carte(long = long, lat = lat, obs = obs,  num = num_carte, buble = buble, 
-              criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
-              nocart = nocart, lablong = lablong, lablat = lablat, label = label,
-              cex.lab = cex.lab, symbol = pch, method = "Angleplot",
-              axis = axes, legmap = legmap, legends = legends) 
-        
-        graphique(var1 = theta, var2 = absvar, obs = obs, num = num_graph, 
-                  graph = "Angleplot", labvar = labvar, couleurs = col, 
-                  symbol = pch, quantiles = quantiles, alpha1 = alpha)
-        
-        assign("GeoXp.open", TRUE, envir = baseenv())}
-    }
-  }
   
   ####################################################
   # creation de la boite de dialogue

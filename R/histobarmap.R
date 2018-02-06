@@ -60,6 +60,22 @@ histobarmap <- function(sp.obj, names.var, nbcol = 10, type = "count",
   choix <- ""
   listgraph <- c("Histogram", "Barplot", "Scatterplot")
   
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = baseenv()) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = baseenv())
+    } else {
+      if (get("GeoXp.open", envir = baseenv())) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = baseenv())
+      }
+    }
+  }
+  
   # Windows device
   if(length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
@@ -308,8 +324,6 @@ histobarmap <- function(sp.obj, names.var, nbcol = 10, type = "count",
     }
   }
   
-  
-  
   ####################################################
   #  d'un autre graphique
   ####################################################
@@ -509,41 +523,19 @@ histobarmap <- function(sp.obj, names.var, nbcol = 10, type = "count",
   ####################################################
   # Representation graphique
   ####################################################
-  # Is there a Tk window already open ?
-  if (interactive()) {
-    if (!exists("GeoXp.open", envir = baseenv()) || length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
-      carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte,
+
+  carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte,
             cbuble = z, criteria = criteria, nointer = nointer, obs = obs, label = label,
             cex.lab = cex.lab, symbol = pch, carte = carte, nocart = nocart, couleurs = col2,
             method = "Cluster", classe = var1, legmap = legmap, legends = legends, labmod = names.arg,
             axis = axes, lablong = "", lablat = "")
       
-      graphique(var1 = var1, obs = obs, num = num_graph1, graph = "Barplot", labvar = labvar1, 
+  graphique(var1 = var1, obs = obs, num = num_graph1, graph = "Barplot", labvar = labvar1, 
                 symbol = pch, labmod = names.arg, couleurs = col, bin = type)
       
-      graphique(var1 = var2, obs = obs, num = num_graph2, graph = "Histogram", nbcol = nbcol, 
+  graphique(var1 = var2, obs = obs, num = num_graph2, graph = "Histogram", nbcol = nbcol, 
                 bin = type, labvar = labvar2, couleurs = col[1])
-      assign("GeoXp.open", TRUE, envir = baseenv())
-    } else {
-      if (get("GeoXp.open", envir = baseenv())) {
-        stop("Warning : a GeoXp function is already open. 
-             Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
-        } else {      
-          carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte,
-                cbuble = z, criteria = criteria, nointer = nointer, obs = obs, label = label,
-                cex.lab = cex.lab, symbol = pch, carte = carte, nocart = nocart, couleurs = col2,
-                method = "Cluster", classe = var1, legmap = legmap, legends = legends, labmod = names.arg,
-                axis = axes, lablong = "", lablat = "")
-        
-          graphique(var1 = var1, obs = obs, num = num_graph1, graph = "Barplot", labvar = labvar1,  
-                    symbol = pch, labmod = names.arg, couleurs = col, bin = type)
-          
-          graphique(var1 = var2, obs = obs, num = num_graph2, graph = "Histogram", nbcol = nbcol, 
-                    bin = type, labvar = labvar2, couleurs = col[1])
-          assign("GeoXp.open", TRUE, envir = baseenv())
-        }
-    }
-  }
+   
   
   ####################################################
   # creation de la boite de dialogue to create legens

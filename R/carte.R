@@ -42,9 +42,13 @@ carte <- function (long, lat, obs, sp.obj = NULL, num = NULL, criteria = NULL,
       y.lim <- c(min(lat, na.rm = TRUE), max(lat, na.rm = TRUE))
     }
   
-  if (method == "Neighbourplot1") 
-    obs2 <- ifelse(is.matrix(obs), diag(obs), obs)
-
+  if (method == "Neighbourplot1") {
+      if(is.matrix(obs))
+        obs2 <- diag(obs)
+      else
+        obs2 <- obs
+  }
+  
   if (method == "Neighbourplot2" | method == "Neighbourplot3") 
     obs2 <- apply(obs, 1, any)
 
@@ -55,8 +59,8 @@ carte <- function (long, lat, obs, sp.obj = NULL, num = NULL, criteria = NULL,
   leg.symb <- symbol
  
 # Representation case by case
-  if ((method == "Cluster")||(method == "Quadrant")||(method == "Neighbourplot1")) { 
-    if (length(symbol)!=length(levels(as.factor(classe)))) { 
+  if ((method == "Cluster") || (method == "Quadrant") || (method == "Neighbourplot1")) { 
+    if (length(symbol) != length(levels(as.factor(classe)))) { 
       symbol <- rep(symbol[1], length(long))
       if (method == "Neighbourplot1") {
         symbol[!obs2] <- 16 
@@ -87,7 +91,7 @@ carte <- function (long, lat, obs, sp.obj = NULL, num = NULL, criteria = NULL,
       cbuble <- rep(0.7, length(long))
       if (class(obs) == "matrix") { 
         if (method == "Neighbourplot1") {
-          cbuble[intersect(which(obs == TRUE, arr.ind=TRUE)[, 1], which(obs == TRUE, arr.ind = TRUE)[, 2])] <- 1
+          cbuble[intersect(which(obs == TRUE, arr.ind = TRUE)[, 1], which(obs == TRUE, arr.ind = TRUE)[, 2])] <- 1
           } else { 
             if (method=="Neighbourplot2") {
               cbuble[unique(which(obs==TRUE, arr.ind=TRUE)[, 1])] <- 1 
@@ -163,7 +167,7 @@ if ((method == "Cluster") || (method == "Quadrant")) {
   if (!spdf) {
     points(long[!obs], lat[!obs], col = couleurs[as.factor(classe)][!obs], pch = symbol[!obs], cex = cbuble[!obs])
   } else {
-      plot(sp.obj,add=TRUE,col=couleurs[as.factor(classe)])
+      plot(sp.obj, add = TRUE, col = couleurs[as.factor(classe)])
   }
 } else { 
   if (method == "Neighbourplot1" ) {
@@ -267,8 +271,7 @@ if(length(long[obs]) != 0) {
         ppp <- symbol[as.factor(classe)]
       else
         ppp <- rep(symbol[1], length(long))
-     
-    # ppp<-symbol
+      
       if(spdf) 
         plot(sp.obj[obs2, ], add = TRUE, col = "yellow")
 

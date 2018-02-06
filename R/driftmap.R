@@ -77,6 +77,22 @@ driftmap <- function(sp.obj, name.var, interpol = TRUE, nuage = TRUE, lty = 1:2,
   nbrow = 10
   nbcol = 10
   
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = baseenv()) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = baseenv())
+    } else {
+      if (get("GeoXp.open", envir = baseenv())) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = baseenv())
+      }
+    }
+  }
+  
   # Windows device
   if(length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
@@ -703,27 +719,11 @@ driftmap <- function(sp.obj, name.var, interpol = TRUE, nuage = TRUE, lty = 1:2,
   ####################################################
   # Representation graphique
   ####################################################
-  
-  # Is there a Tk window already open ?
-  if (interactive()) {
-    if (!exists("GeoXp.open", envir = baseenv()) || length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
-      assign("GeoXp.open", TRUE, envir = baseenv())
-      graphique.drift()
-      carte(long = long, lat = lat, obs = obs, num = num_carte, label = label, symbol = pch[3],
+
+  graphique.drift()
+  carte(long = long, lat = lat, obs = obs, num = num_carte, label = label, symbol = pch[3],
             carte = carte, nocart = nocart, cex.lab = cex.lab, method = "", axis = axes)
-    } else {
-      if (get("GeoXp.open", envir = baseenv())) {
-        stop("Warning : a GeoXp function is already open. 
-             Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
-        } else {
-          graphique.drift()
-          carte(long = long, lat = lat, obs = obs, num = num_carte, label = label, symbol = pch[3],
-                carte = carte, nocart = nocart, cex.lab = cex.lab, method = "", axis = axes)
-        assign("GeoXp.open", TRUE, envir = baseenv())
-        }
-    }
-  }
-  
+
   ####################################################
   # creation de la boite de dialogue
   ####################################################

@@ -20,19 +20,6 @@ clustermap <- function(sp.obj, names.var, clustnum, method = c("kmeans", "hclust
   if (length(names.attr) != length(names(sp.obj))) 
     stop("names.attr should be a vector of character with a length equal to the number of variable")
   
-  # Is there a Tk window already open ?
-  if (interactive()) {
-    if(!exists("GeoXp.open", envir = baseenv()) || length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
-      assign("GeoXp.open", TRUE, envir = baseenv())
-    } else {
-      if (get("GeoXp.open", envir = baseenv())) {
-        stop("Warning : a GeoXp function is already open. Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
-      } else {
-          assign("GeoXp.open", TRUE, envir = baseenv())
-      }
-    }
-  }
-  
   # we propose to refind the same arguments used in first version of GeoXp
   long <- coordinates(sp.obj)[, 1]
   lat <- coordinates(sp.obj)[, 2]
@@ -108,6 +95,22 @@ clustermap <- function(sp.obj, names.var, clustnum, method = c("kmeans", "hclust
   # Transformation de data.frame en matrix
   if ((length(listvar) > 0) && (dim(as.matrix(listvar))[2] == 1)) 
     listvar <- as.matrix(listvar)
+  
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = baseenv()) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = baseenv())
+    } else {
+      if (get("GeoXp.open", envir = baseenv())) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = baseenv())
+      }
+    }
+  }
   
   # Windows device
   if(length(dev.list()) == 0 & options("device") == "RStudioGD")
