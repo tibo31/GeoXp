@@ -366,7 +366,7 @@ if(length(long[obs]) != 0) {
    points(jitter(long[criteria]), lat[criteria], pch = "X",
           cex = 0.8, col = "lightgreen")
 
- if ((length(long[obs]) != 0) & ((method == "") || (method == "Cluster")||(method == "Quadrant")) & spdf)
+ if ((length(long[obs]) != 0) & ((method == "") || (method == "Cluster")||(method == "Quadrant")) & length(label) != 1)
    text(long[obs], lat[obs], label[obs], col = "black", cex = cex.lab, 
         font = 3, adj = c(0.2, -0.2))
 }
