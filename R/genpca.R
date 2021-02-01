@@ -14,7 +14,7 @@ genpca <- function(data, w = rep(1 / nrow(data), length = nrow(data)),
     F1 <- matrix(rep(w, nc), ncol = nc, byrow = FALSE)
     xbar <- colSums(F1 * x)
     
-    if (class(center) == "NULL")
+    if (class(center)[1] == "NULL")
       xc <- x - rep(1, nr) %*% t(xbar)
     else {
       if (length(center) == nc)

@@ -121,6 +121,11 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
   borne1 <- 0.01
   borne2 <- 0.99
   alpha <- 0.5
+  
+  temp_data <- data.frame(
+    var1 = sort(theta),
+    var2 = absvar[order(theta)])
+  alpha1 <- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
   ####################################################
   # selection d'un point sur l'angleplot
   ####################################################
@@ -140,7 +145,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
         quit <- TRUE
         graphique(var1 = theta, var2 = absvar, obs = obs, num = num_graph, 
                   graph = "Angleplot", labvar = labvar, couleurs = col, 
-                  symbol = pch, quantiles = quantiles, alpha1 = alpha)
+                  symbol = pch, quantiles = quantiles, alpha1 = alpha1)
         next
       }
       
@@ -150,7 +155,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
       diag(obs) <<- FALSE
       graphique(var1 = theta, var2 = absvar, obs = obs, num = num_graph, 
                 graph = "Angleplot", labvar = labvar, couleurs = col, 
-                symbol = pch, quantiles = quantiles, alpha1 = alpha)
+                symbol = pch, quantiles = quantiles, alpha1 = alpha1)
       
       title("ACTIVE DEVICE", cex.main = 0.8, font.main = 3, col.main = "red")
       title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
@@ -206,7 +211,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
       
       graphique(var1 = theta, var2 = absvar, obs = obs, num = num_graph, 
                 graph = "Angleplot", labvar = labvar, couleurs = col, 
-                symbol = pch, quantiles = quantiles, alpha1 = alpha)
+                symbol = pch, quantiles = quantiles, alpha1 = alpha1)
       
       carte(long = long, lat = lat, obs = obs,  num = num_carte, buble = buble, 
             criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
@@ -251,7 +256,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
     
     graphique(var1 = theta, var2 = absvar, obs = obs, num = num_graph, 
               graph = "Angleplot", labvar = labvar, couleurs = col, 
-              symbol = pch, quantiles = quantiles, alpha1 = alpha)
+              symbol = pch, quantiles = quantiles, alpha1 = alpha1)
   }
   
   
@@ -279,7 +284,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
     pdf(fig_save)
     graphique(var1 = theta, var2 = absvar, obs = obs, num = dev.list()[length(dev.list())], 
               graph = "Angleplot", labvar = labvar, couleurs = col, 
-              symbol = pch, quantiles = quantiles, alpha1 = alpha)
+              symbol = pch, quantiles = quantiles, alpha1 = alpha1)
     dev.off()
     
     k <- 1
@@ -353,10 +358,18 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
   ####################################################
   
   refresh.code <- function(...) {
+    
     alpha <<- slider1(names.slide = names.slide, no = 1)
+  
+    temp_data <- data.frame(
+      var1 = sort(theta),
+      var2 = absvar[order(theta)])
+    
+    alpha1 <<- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
+    
     graphique(var1 = theta, var2 = absvar, obs = obs, num = num_graph, 
               graph = "Angleplot", labvar = labvar, couleurs = col, 
-              symbol = pch, quantiles = quantiles, alpha1 = alpha)
+              symbol = pch, quantiles = quantiles, alpha1 = alpha1)
   }
   
   ####################################################
@@ -371,7 +384,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
       
       graphique(var1 = theta, var2 = absvar, obs = obs, num = num_graph, 
                 graph = "Angleplot", labvar = labvar, couleurs = col, 
-                symbol = pch, quantiles = quantiles, alpha1 = alpha)
+                symbol = pch, quantiles = quantiles, alpha1 = alpha1)
       
   
   ####################################################
@@ -428,6 +441,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
               borne1, borne2, (borne2 - borne1)/100, alpha)
       
       tkpack(frame1c, expand = "TRUE", fill = "x")
+    
     }
     
     frame3 <- tkframe(tt, relief = "groove", borderwidth = 2, background = "white")

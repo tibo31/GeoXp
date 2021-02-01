@@ -68,11 +68,11 @@ clustermap <- function(sp.obj, names.var, clustnum, method = c("kmeans", "hclust
     type <- ifelse(method[1] == "kmeans", "Hartigan-Wong", "ward.D")
   
   # Reduction de la matrice des donnees
-  if (scale && class(dataset) != "dist") 
+  if (scale && class(dataset)[1] != "dist") 
     dataset <- scale(dataset)
   
   # Etude des differentes possibilites
-  if (class(dataset) != "dist") {
+  if (class(dataset)[1] != "dist") {
     if (method[1] == "hclust") 
       dataset <- dist(dataset)
   } else {

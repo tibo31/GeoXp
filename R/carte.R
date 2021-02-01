@@ -14,7 +14,7 @@ carte <- function (long, lat, obs, sp.obj = NULL, num = NULL, criteria = NULL,
   x.lim <- c(min(long, na.rm = TRUE), max(long, na.rm = TRUE)) 
   y.lim <- c(min(lat, na.rm = TRUE), max(lat, na.rm = TRUE))
 
-  spdf <- (class(sp.obj) == "SpatialPolygonsDataFrame")
+  spdf <- (class(sp.obj)[1] == "SpatialPolygonsDataFrame")
   if(spdf & couleurs[1]=="blue") 
     couleurs <- "lightblue3" 
 
@@ -89,7 +89,7 @@ carte <- function (long, lat, obs, sp.obj = NULL, num = NULL, criteria = NULL,
         legmap[3] <- min(cbuble)
     } else {
       cbuble <- rep(0.7, length(long))
-      if (class(obs) == "matrix") { 
+      if (class(obs)[1] == "matrix") { 
         if (method == "Neighbourplot1") {
           cbuble[intersect(which(obs == TRUE, arr.ind = TRUE)[, 1], which(obs == TRUE, arr.ind = TRUE)[, 2])] <- 1
           } else { 
@@ -111,7 +111,7 @@ carte <- function (long, lat, obs, sp.obj = NULL, num = NULL, criteria = NULL,
   if (spdf) {
     plot(sp.obj, xlab = lablong, ylab = lablat, axes = axis)
     if (nocart) {
-      if (class(carte) != "list") {
+      if (class(carte)[1] != "list") {
         n <- nrow(carte)
         abs1 <- carte[1:(n-1), 1]
         ord1 <- carte[1:(n-1), 2]
@@ -134,7 +134,7 @@ carte <- function (long, lat, obs, sp.obj = NULL, num = NULL, criteria = NULL,
     if (nocart) {
       plot(x.lim, y.lim, "n", xlab = lablong, ylab = lablat, tcl = -.25, 
            las = 1, cex = cbuble, asp = asp, axes = axis)
-      if (class(carte) != "list") {
+      if (class(carte)[1] != "list") {
         n <- nrow(carte)
         abs1 <- carte[1:(n-1), 1]
         ord1 <- carte[1:(n-1), 2]

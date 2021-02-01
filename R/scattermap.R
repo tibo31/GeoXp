@@ -99,6 +99,10 @@ scattermap <- function(sp.obj, names.var, lin.reg = TRUE, quantiles = TRUE,
   borne1 <- 0.01
   borne2 <- 0.99
   alpha <- 0.5
+  temp_data <- data.frame(
+    var1 = sort(var1),
+    var2 = var2[order(var1)])
+  alpha1 <- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
   
   names.slide <- "Value of alpha-quantile"
   
@@ -161,7 +165,7 @@ scattermap <- function(sp.obj, names.var, lin.reg = TRUE, quantiles = TRUE,
           quit<-TRUE
           graphique(var1 = var1, var2 = var2, obs = obs, num = num_graph, graph = "Scatterplot", 
                     labvar = labvar, symbol = pch, couleurs = col, opt1 = lin.reg,
-                    quantiles = quantiles, alpha1 = alpha)
+                    quantiles = quantiles, alpha1 = alpha1)
           next
         }
         obs <<- selectmap(var1 = var1, var2 = var2, obs = obs, 
@@ -171,7 +175,7 @@ scattermap <- function(sp.obj, names.var, lin.reg = TRUE, quantiles = TRUE,
       # graphiques     
       graphique(var1 = var1, var2 = var2, obs = obs, num = num_graph, graph = "Scatterplot", 
                 labvar = labvar, symbol = pch, couleurs = col, opt1 = lin.reg, 
-                quantiles = quantiles, alpha1 = alpha)
+                quantiles = quantiles, alpha1 = alpha1)
       
       carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
@@ -281,7 +285,7 @@ scattermap <- function(sp.obj, names.var, lin.reg = TRUE, quantiles = TRUE,
       # graphiques
       graphique(var1 = var1, var2 = var2, obs = obs, num = num_graph, graph = "Scatterplot", 
                 labvar = labvar, symbol = pch, couleurs = col, opt1 = lin.reg, 
-                quantiles = quantiles, alpha1 = alpha)
+                quantiles = quantiles, alpha1 = alpha1)
       
       carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
@@ -402,7 +406,7 @@ scattermap <- function(sp.obj, names.var, lin.reg = TRUE, quantiles = TRUE,
     # graphiques
     graphique(var1 = var1, var2 = var2, obs = obs, num = num_graph, graph = "Scatterplot", 
               labvar = labvar, symbol = pch, couleurs = col, opt1 = lin.reg, 
-              quantiles = quantiles, alpha1 = alpha)
+              quantiles = quantiles, alpha1 = alpha1)
     
     carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
           buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
@@ -444,7 +448,7 @@ scattermap <- function(sp.obj, names.var, lin.reg = TRUE, quantiles = TRUE,
     pdf(fig_save)
     graphique(var1 = var1, var2 = var2, obs = obs, num = dev.list()[length(dev.list())], 
               graph = "Scatterplot", labvar = labvar, symbol = pch, couleurs = col, 
-              opt1 = lin.reg, quantiles = quantiles, alpha1 = alpha)
+              opt1 = lin.reg, quantiles = quantiles, alpha1 = alpha1)
     dev.off()
     
     k <- 1
@@ -499,9 +503,21 @@ scattermap <- function(sp.obj, names.var, lin.reg = TRUE, quantiles = TRUE,
   
   refresh.code <- function(...) {
     alpha <<- slider1(names.slide = names.slide, no = 1)
+    
+    temp_data <- data.frame(
+      var1 = sort(var1),
+      var2 = var2[order(var1)])
+    
+    alpha1 <<- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
+    
     graphique(var1 = var1, var2 = var2, obs = obs, num = num_graph, graph = "Scatterplot", 
               labvar = labvar, symbol = pch, couleurs = col, opt1 = lin.reg, 
-              quantiles = quantiles, alpha1 = alpha)
+              quantiles = quantiles, alpha1 = alpha1)
+   
+   
+    #fitmax  <- rqss(var2 ~ qss(var1, constraint= "CD", lambda = etendue), 
+    #                tau = alpha1, data = temp_data, control = sfn.control(warn.mesg = FALSE))    
+    # lines(xSeq$var1, pred$fit, col = "blue") 
   }
   
   
@@ -550,7 +566,7 @@ scattermap <- function(sp.obj, names.var, lin.reg = TRUE, quantiles = TRUE,
   ####################################################
   graphique(var1 = var1, var2 = var2, obs = obs, num = num_graph, graph = "Scatterplot", 
                 labvar = labvar, symbol = pch, couleurs = col, opt1 = lin.reg, 
-                quantiles = quantiles, alpha1 = alpha)
+                quantiles = quantiles, alpha1 = alpha1)
       
   carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer,

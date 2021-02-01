@@ -149,6 +149,11 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
   borne2 <- 0.99
   alpha <- 0.5
   
+  temp_data <- data.frame(
+    var1 = sort(theta),
+    var2 = absvar[order(theta)])
+  alpha1 <- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
+  
   ####################################################
   # selection d'un point sur la carte
   ####################################################
@@ -194,7 +199,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
       
       graphique(var1 = theta, var2 = absvar, obs = obs2, num = num_graph, 
                 graph = "pairwise", labvar = labvar, couleurs = col, symbol = pch, 
-                quantiles = quantiles, alpha1 = alpha)
+                quantiles = quantiles, alpha1 = alpha1)
     }
   }
   
@@ -245,7 +250,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
       
       graphique(var1 = theta, var2 = absvar, obs = obs2, num = num_graph, 
                 graph = "pairwise", labvar = labvar, couleurs = col, symbol = pch, 
-                quantiles = quantiles, alpha1 = alpha)
+                quantiles = quantiles, alpha1 = alpha1)
     }
   }
   
@@ -271,7 +276,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
         quit <- TRUE
         graphique(var1 = theta, var2 = absvar, obs = obs2, num = num_graph, 
                   graph = "pairwise", labvar = labvar, couleurs = col, symbol = pch, 
-                  quantiles = quantiles, alpha1 = alpha)
+                  quantiles = quantiles, alpha1 = alpha1)
         next
       }
       
@@ -283,7 +288,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
       obs2 <<- obs
       graphique(var1 = theta, var2 = absvar, obs = obs2, num = num_graph, 
                 graph = "pairwise", labvar = labvar, couleurs = col, symbol = pch, 
-                quantiles = quantiles, alpha1 = alpha)
+                quantiles = quantiles, alpha1 = alpha1)
       title("ACTIVE DEVICE", cex.main = 0.8, font.main = 3, col.main = "red")
       title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
             cex.sub = 0.8, font.sub = 3, col.sub = "red")
@@ -341,7 +346,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
       obs2 <<- obs
       graphique(var1 = theta, var2 = absvar, obs = obs2, num = num_graph, 
                 graph = "pairwise", labvar = labvar, couleurs = col, symbol = pch, 
-                quantiles = quantiles, alpha1 = alpha)
+                quantiles = quantiles, alpha1 = alpha1)
       
       carte(long = long, lat = lat, obs = obs, num = num_carte, buble = buble, criteria = criteria,
             nointer = nointer, cbuble = z, carte = carte, nocart = nocart, lablong = lablong,
@@ -382,7 +387,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
     
     graphique(var1 = theta, var2 = absvar, obs = obs2, num = num_graph, 
               graph = "pairwise", labvar = labvar, couleurs = col, symbol = pch, 
-              quantiles = quantiles, alpha1 = alpha)
+              quantiles = quantiles, alpha1 = alpha1)
   }
   
   ####################################################
@@ -408,7 +413,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
     pdf(fig_save)
     graphique(var1 = theta, var2 = absvar, obs = obs2, num = dev.list()[length(dev.list())], 
               graph = "pairwise", labvar = labvar, couleurs = col, symbol = pch, 
-              quantiles = quantiles, alpha1 = alpha)
+              quantiles = quantiles, alpha1 = alpha1)
     dev.off()
     
     k <- 1
@@ -487,11 +492,18 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
   ####################################################
   
   refresh.code <- function(...)  {
+
     alpha <<- slider1(names.slide = names.slide, no = 1)
+    
+    temp_data <- data.frame(
+      var1 = sort(theta),
+      var2 = absvar[order(theta)])
+    
+    alpha1 <<- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
     
     graphique(var1 = theta, var2 = absvar, obs = obs2, num = num_graph, 
               graph = "pairwise", labvar = labvar, couleurs = col, symbol = pch, 
-              quantiles = quantiles, alpha1 = alpha)
+              quantiles = quantiles, alpha1 = alpha1)
   }
   
   ####################################################
@@ -505,7 +517,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
   
   graphique(var1 = theta, var2 = absvar, obs = obs2, num = num_graph, 
             graph = "pairwise", labvar = labvar, couleurs = col, symbol = pch, 
-            quantiles = quantiles, alpha1 = alpha)
+            quantiles = quantiles, alpha1 = alpha1)
   
   ####################################################
   # creation de la boite de dialogue

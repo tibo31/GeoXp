@@ -1,6 +1,5 @@
-import(spdep, spData, stats, tcltk)
+import(spdep, spData, stats, tcltk, qgam)
 importFrom(rgeos, gContains)
-importFrom(quantreg, rqss, plot.rqss, sfn.control)
 importFrom(rgl, bg3d, par3d, plot3d, rgl.close, rgl.postscript, rotationMatrix)
 importFrom(KernSmooth, bkde)
 importFrom(robustbase, covMcd)

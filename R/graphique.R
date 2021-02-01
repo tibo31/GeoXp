@@ -303,11 +303,17 @@ graphique <- function (var1, var2, var3, obs, num, graph = "", couleurs = "",
     }
     
     if(quantiles) {
-      etendue <- diff(range(var1))
-      fitmax  <- rqss(var2 ~ qss(var1, constraint= "N", lambda = etendue), 
-                      tau = alpha1, control = sfn.control(warn.mesg = FALSE))    
-      plot.rqss(fitmax, add = TRUE, rug = FALSE, 
-                titles = "", col = "blue") 
+      temp_data <- data.frame(
+        var1 = sort(var1),
+        var2 = var2[order(var1)])
+  #    fit <- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha1)
+       xSeq <- data.frame(cbind("var2" = rep(0, 1e3), 
+                                "var1" = seq(min(var1), max(var1), 
+                                            length.out = 1e3)))
+       pred <- predict(alpha1, newdata = xSeq, se=TRUE)
+  #    #fitmax  <- rqss(var2 ~ qss(var1, constraint= "CD", lambda = etendue), 
+  #    #                tau = alpha1, data = temp_data, control = sfn.control(warn.mesg = FALSE))    
+       lines(xSeq$var1, pred$fit, col = "blue") 
     }
     
     if (length(var1[obs]) != 0) {
@@ -555,9 +561,9 @@ graphique <- function (var1, var2, var3, obs, num, graph = "", couleurs = "",
     z <- seq(1, length(x), by = (length(x)/1000))
     z <- round(z)
     
-    if (quantiles) 
-      fitmax <- rqss(vect2 ~ qss(vect1, constraint= "N", lambda = diff(range(vect1))), 
-                      tau = alpha1, control = sfn.control(warn.mesg=FALSE))
+    #if (quantiles) 
+      #fitmax <- rqss(vect2 ~ qss(vect1, constraint= "N", lambda = diff(range(vect1))), 
+      #                tau = alpha1, control = sfn.control(warn.mesg=FALSE))
     
     if(quantiles) {
       plot(vect1, vect2, "n", xlab = labvar[1], ylab = labvar[2],
@@ -569,10 +575,26 @@ graphique <- function (var1, var2, var3, obs, num, graph = "", couleurs = "",
         axis(1)
       }
       axis(2)   
-      points(vect1[which(vect2 > predict(fitmax, newdata = list(vect1 = vect1)))],
-             vect2[which(vect2 > predict(fitmax, newdata = list(vect1 = vect1)))],
+      
+      temp_data <- data.frame(
+        var1 = sort(vect1),
+        var2 = vect2[order(vect1)])
+      #    fit <- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha1)
+      xSeq <- data.frame(cbind("var2" = rep(0, 1e3), 
+                               "var1" = seq(min(vect1), max(vect1), 
+                                            length.out = 1e3)))
+      pred <- predict(alpha1, newdata = xSeq, se=TRUE)
+      #    #fitmax  <- rqss(var2 ~ qss(var1, constraint= "CD", lambda = etendue), 
+      #    #                tau = alpha1, data = temp_data, control = sfn.control(warn.mesg = FALSE))    
+      lines(xSeq$var1, pred$fit, col = "blue") 
+      
+      xSeq <- data.frame(cbind("var2" = vect2, 
+                               "var1" = vect1))
+      pred <- predict(alpha1, newdata = xSeq, se=TRUE)
+      points(vect1[which(vect2 > pred$fit)],
+             vect2[which(vect2 > pred$fit)],
              col = couleurs, pch = 16, cex = 0.8)
-      plot.rqss(fitmax, add = TRUE, rug = FALSE, titles = "") 
+      # plot.rqss(fitmax, add = TRUE, rug = FALSE, titles = "") 
     } else {
       plot(vect1, vect2, "n", xlab=labvar[1], ylab = labvar[2],
            xlim = c(0, max(vect1)), axes = FALSE)
@@ -662,9 +684,9 @@ graphique <- function (var1, var2, var3, obs, num, graph = "", couleurs = "",
     
     etendue <- max(vect[z, 1]) - min(vect[z, 1])
     
-    if (quantiles) 
-      fitmax  <- rqss(vect2 ~ qss(vect1, constraint= "N", lambda = etendue), 
-                      tau = alpha1, control = sfn.control(warn.mesg = FALSE))
+    #if (quantiles) 
+    #  fitmax  <- rqss(vect2 ~ qss(vect1, constraint= "N", lambda = etendue), 
+    #                  tau = alpha1, control = sfn.control(warn.mesg = FALSE))
     
     n <- length(x)
     d <- max(x[2:length(x)] - x[1:(length(x) - 1)])
@@ -681,11 +703,30 @@ graphique <- function (var1, var2, var3, obs, num, graph = "", couleurs = "",
       plot(vect1, vect2, "n", xlab = "Distance", ylab = "semivariance",
            xlim = xlim, ylim = ylim)
       
-      points(vect1[which(vect2 > predict(fitmax, newdata = list(vect1 = vect1)))],
-             vect2[which(vect2 > predict(fitmax, newdata = list(vect1=vect1)))],
+      temp_data <- data.frame(
+        var1 = sort(vect1),
+        var2 = vect2[order(vect1)])
+      #    fit <- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha1)
+      xSeq <- data.frame(cbind("var2" = rep(0, 1e3), 
+                               "var1" = seq(min(vect1), max(vect1), 
+                                            length.out = 1e3)))
+      pred <- predict(alpha1, newdata = xSeq, se=TRUE)
+      #    #fitmax  <- rqss(var2 ~ qss(var1, constraint= "CD", lambda = etendue), 
+      #    #                tau = alpha1, data = temp_data, control = sfn.control(warn.mesg = FALSE))    
+      lines(xSeq$var1, pred$fit, col = "blue") 
+      
+      xSeq <- data.frame(cbind("var2" = vect2, 
+                               "var1" = vect1))
+      pred <- predict(alpha1, newdata = xSeq, se=TRUE)
+      points(vect1[which(vect2 > pred$fit)],
+             vect2[which(vect2 > pred$fit)],
              col = couleurs, pch = 16, cex = 0.8)
       
-      plot.rqss(fitmax, add = TRUE, rug = FALSE, titles = "", col = couleur[1])
+      #points(vect1[which(vect2 > predict(fitmax, newdata = list(vect1 = vect1)))],
+      #       vect2[which(vect2 > predict(fitmax, newdata = list(vect1=vect1)))],
+      #       col = couleurs, pch = 16, cex = 0.8)
+      
+      #plot.rqss(fitmax, add = TRUE, rug = FALSE, titles = "", col = couleur[1])
     } else {
       plot(vect1, vect2, "n", xlab = "Distance", ylab = "semivariance", 
            xlim = xlim, ylim=ylim)

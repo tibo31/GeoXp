@@ -129,6 +129,11 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
   borne2 <- 0.99
   alpha <- 0.5
   
+  temp_data <- data.frame(
+    var1 = sort(dist),
+    var2 = dif[order(dist)])
+  alpha1 <- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
+  
   ####################################################
   # selection d'un point sur le variocloud
   ####################################################
@@ -148,7 +153,7 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
         quit <- TRUE
         graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
                   graph = "Variocloud", labvar = labvar, symbol = pch, couleurs=col, quantiles = quantiles, 
-                  alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)
+                  alpha1 = alpha1, bin = bin, xlim = xlim, ylim = ylim)
         next
       }
       obs <<- selectstat(var1 = dist, var2 = dif, obs = obs,Xpoly = loc[1], Ypoly = loc[2], 
@@ -156,7 +161,7 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
       
       graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
                 graph = "Variocloud", labvar = labvar, symbol = pch, couleurs=col, quantiles = quantiles, 
-                alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)
+                alpha1 = alpha1, bin = bin, xlim = xlim, ylim = ylim)
       
       title("ACTIVE DEVICE", cex.main = 0.8, font.main = 3, col.main = "red")
       title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
@@ -207,7 +212,7 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
       
       graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
                 graph = "Variocloud", labvar = labvar, symbol = pch, couleurs=col, quantiles = quantiles, 
-                alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)
+                alpha1 = alpha1, bin = bin, xlim = xlim, ylim = ylim)
       
       carte(long = long, lat = lat, obs = obs, num = num_carte, lablong = lablong, lablat = lablat, 
             label = label, buble = buble, criteria = criteria, nointer = nointer, cbuble = z,
@@ -237,9 +242,16 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
   ####################################################
   refresh.code <- function(...) {
     alpha <<- slider1(names.slide = names.slide, no = 1)
+    
+    temp_data <- data.frame(
+      var1 = sort(dist),
+      var2 = dif[order(dist)])
+    
+    alpha1 <<- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
+    
     graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
               graph = "Variocloud", labvar = labvar, symbol = pch, couleurs=col, quantiles = quantiles, 
-              alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)
+              alpha1 = alpha1, bin = bin, xlim = xlim, ylim = ylim)
   }
   
   ####################################################
@@ -251,7 +263,7 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
     
     graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
               graph = "Variocloud", labvar = labvar, symbol = pch, couleurs=col, quantiles = quantiles, 
-              alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)
+              alpha1 = alpha1, bin = bin, xlim = xlim, ylim = ylim)
     
     carte(long = long, lat = lat, obs = obs, num = num_carte, lablong = lablong, lablat = lablat, 
           label = label, buble = buble, criteria = criteria, nointer = nointer, cbuble = z,
@@ -283,7 +295,7 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
     pdf(fig_save)
     graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = dev.list()[length(dev.list())], 
               graph = "Variocloud", labvar = labvar, symbol = pch, couleurs=col, quantiles = quantiles, 
-              alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)
+              alpha1 = alpha1, bin = bin, xlim = xlim, ylim = ylim)
     dev.off()
     
     k <- 1
@@ -355,7 +367,7 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
     
     graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
               graph = "Variocloud", labvar = labvar, symbol = pch, couleurs = col, quantiles = quantiles, 
-              alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)   
+              alpha1 = alpha1, bin = bin, xlim = xlim, ylim = ylim)   
   }
   
   vari2 <- function() {
@@ -363,7 +375,7 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
     
     graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
               graph = "Variocloud", labvar = labvar, symbol = pch, couleurs = col, quantiles = quantiles, 
-              alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)   
+              alpha1 = alpha1, bin = bin, xlim = xlim, ylim = ylim)   
   }
   
   ####################################################
@@ -415,7 +427,7 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
         
         graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
                   graph = "Variocloud", labvar = labvar, symbol = pch, couleurs=col, quantiles = quantiles, 
-                  alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)  
+                  alpha1 = alpha1, bin = bin, xlim = xlim, ylim = ylim)  
         }
       }
       
@@ -431,7 +443,7 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
       
       graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
                 graph = "Variocloud", labvar = labvar, symbol = pch, couleurs=col, quantiles = quantiles, 
-                alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)   
+                alpha1 = alpha1, bin = bin, xlim = xlim, ylim = ylim)   
     }
     
   }
@@ -442,7 +454,7 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
 
   graphique(var1 = dist, var2 = dif, var3 = dif2, obs = obs, opt1 = opt1, opt2 = opt2, num = num_graph, 
                 graph = "Variocloud", labvar = labvar, symbol = pch, couleurs=col, quantiles = quantiles, 
-                alpha1 = alpha, bin = bin, xlim = xlim, ylim = ylim)  
+                alpha1 = alpha1, bin = bin, xlim = xlim, ylim = ylim)  
       
   carte(long = long, lat = lat, obs = obs, num = num_carte, lablong = lablong, lablat = lablat, 
             label = label, buble = buble, criteria = criteria, nointer = nointer, cbuble = z,

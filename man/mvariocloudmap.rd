@@ -75,9 +75,11 @@ meuse.nb <- knn2nb(meuse.knn)
 
 # example of use of mvariocloudmap. The statistic are calculated by taking
 # into account variables cadmium,copper,lead,zinc,elev
+\donttest{
 mvariocloudmap(meuse.spdf, meuse.nb, c("cadmium", "copper", "lead", "zinc", "elev"), 
  quantiles = 0.95, carte = meuse.riv[-c(1:20, 73:98, 156:176), ], identify = TRUE, 
  criteria = (meuse.spdf$lime == 1))
+ }
 }
 
 \keyword{spatial}

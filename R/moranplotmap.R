@@ -145,6 +145,8 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
   wx.centre <- (W %*% x.centre)
   ilocal <- (x.centre / var(x.centre)) * (wx.centre)  
   
+  ilocal <- matrix(spdep::localmoran(var, listw = listw.obj)[, 4], ncol = 1)
+  
   ####################################################
   # selection d'un point
   ####################################################

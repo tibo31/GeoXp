@@ -87,9 +87,11 @@ meuse.spdf <- SpatialPointsDataFrame(meuse.sp, meuse)
 data(meuse.riv)
 
 # example of use of variocloudmap
+\donttest{
 variocloudmap(meuse.spdf, "zinc", quantiles = TRUE, bin = seq(0, 2000, 100),
  xlim = c(0, 2000), ylim = c(0, 500000), pch = 2, carte = meuse.riv[c(21:65, 110:153), ],
  criteria = (meuse$lime == 1))
+ }
 }
 
 \seealso{\code{\link{angleplotmap}}, \code{\link{driftmap}}}
