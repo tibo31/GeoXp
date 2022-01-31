@@ -5,13 +5,13 @@ slider1 <- function(fenetre, refresh.code, names.slide, minima, maxima, resoluti
     if (no != 0) {
       if (p == 1) {
         res <- as.numeric(tclvalue(get(paste("slider.value", 1, sep = ""), 
-                                       envir = baseenv())))
+                                       envir = globalenv())))
       } else {
-        if (exists("slider.value2", envir = baseenv())) {
+        if (exists("slider.value2", envir = globalenv())) {
           res <- list(alpha11 = as.numeric(tclvalue(get(paste("slider.value", 1, sep = ""),
-                                                        envir = baseenv()))),
+                                                        envir = globalenv()))),
                       alpha21 = as.numeric(tclvalue(get(paste("slider.value", 2, sep = ""),
-                                                        envir = baseenv()))))
+                                                        envir = globalenv()))))
         } else {
           res <- list(alpha11 = 20, alpha21 = 20)
         }
@@ -22,7 +22,7 @@ slider1 <- function(fenetre, refresh.code, names.slide, minima, maxima, resoluti
     # creation of the slider on the Tk window
     for (i in 1:p) {
       eval(parse(text = paste("assign(\"slider.value", i,
-          "\",tclVar(starts[i]),envir=baseenv())", sep = "")))
+          "\",tclVar(starts[i]),envir=globalenv())", sep = "")))
       
       lab <- tklabel(fenetre, text = names.slide[i], width = "25")
       sc <- tkscale(
@@ -34,10 +34,10 @@ slider1 <- function(fenetre, refresh.code, names.slide, minima, maxima, resoluti
           resolution = resolutions[1],
           orient = "horiz"
         )
-      assign("sc", sc, envir = baseenv())
+      assign("sc", sc, envir = globalenv())
       tkgrid(lab, sc)
       eval(parse(text = paste("tkconfigure(sc,variable=slider.value", i, ")", sep = "")), 
-           envir = list(baseenv(), .GlobalEnv))
+           envir = list(globalenv(), .GlobalEnv))
       
       tkgrid.configure(lab,
                        column = 0,
