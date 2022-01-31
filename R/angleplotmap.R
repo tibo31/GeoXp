@@ -3,7 +3,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
                          pch = 16, col = "lightblue3", xlab = "angle", ylab = "absolute magnitude",
                          axes = FALSE, lablong = "", lablat = "") {
   
-  envir <- as.environment(1)
+
   # Verification of the Spatial Object sp.obj
   class.obj <- class(sp.obj)[1]
   
@@ -74,7 +74,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
   }
   
   # Windows device
-  if(length(dev.list()) == 0)
+  if(length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
   # if(!(2%in%dev.list())) 
   dev.new(noRStudioGD = FALSE)
@@ -124,7 +124,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
   temp_data <- data.frame(
     var1 = sort(theta),
     var2 = absvar[order(theta)])
-  alpha1 <- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
+  alpha1 <- qgam::qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
   ####################################################
   # selection d'un point sur l'angleplot
   ####################################################
@@ -204,7 +204,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
     if (length(polyX) > 0) {
       lines(polyX, polyY)
       for (i in 1:length(long)) {
-        def <- inout(cbind(theta[, i], absvar[, i]), cbind(polyX, polyY), bound = TRUE)       
+        def <- splancs::inout(cbind(theta[, i], absvar[, i]), cbind(polyX, polyY), bound = TRUE)       
         obs[def, i ] <<- !obs[def, i]    
       }
       
@@ -364,7 +364,7 @@ angleplotmap <- function(sp.obj, name.var, quantiles = TRUE, names.attr = names(
       var1 = sort(theta),
       var2 = absvar[order(theta)])
     
-    alpha1 <<- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
+    alpha1 <<- qgam::qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
     
     graphique(var1 = theta, var2 = absvar, obs = obs, num = num_graph, 
               graph = "Angleplot", labvar = labvar, couleurs = col, 

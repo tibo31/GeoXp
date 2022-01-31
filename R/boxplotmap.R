@@ -83,7 +83,7 @@ boxplotmap <- function(sp.obj, name.var, names.attr = names(sp.obj),
   }
   
   # Windows device
-  if(length(dev.list()) == 0)
+  if(length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
   # if(!(2%in%dev.list())) 
   dev.new(noRStudioGD = FALSE)

@@ -83,7 +83,7 @@ scattermap <- function(sp.obj, names.var, lin.reg = TRUE, quantiles = TRUE,
   }
   
   # Windows device
-  if(length(dev.list()) == 0)
+  if(length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
   # if(!(2%in%dev.list())) 
   dev.new(noRStudioGD = FALSE)
