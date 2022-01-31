@@ -2,8 +2,6 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
                           carte = NULL, identify = FALSE, cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "", ylab = "", 
                           axes = FALSE, lablong = "", lablat = "", xlim = NULL, ylim = NULL) {
 
-  envir <- as.environment(1)
-  
   # Verification of the Spatial Object sp.obj
   class.obj <- class(sp.obj)[1]
   
@@ -67,16 +65,15 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
   
   # Is there a Tk window already open ?
   if (interactive()) {
-    if (!exists("GeoXp.open", envir = baseenv()) ||
-        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
-      assign("GeoXp.open", TRUE, envir = baseenv())
+    if (!exists("GeoXp.open", envir = globalenv())) {
+      assign("GeoXp.open", TRUE, envir = globalenv())
     } else {
-      if (get("GeoXp.open", envir = baseenv())) {
+      if (get("GeoXp.open", envir = globalenv())) {
         stop(
           "A GeoXp function is already open. 
           Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
       } else {
-        assign("GeoXp.open", TRUE, envir = baseenv())
+        assign("GeoXp.open", TRUE, envir = globalenv())
       }
     }
   }
@@ -278,7 +275,7 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
   
   quitfunc <- function() {
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = baseenv())
+    assign("GeoXp.open", FALSE, envir = globalenv())
     dev.off(num_graph)
     dev.off(num_carte)
   }
@@ -312,11 +309,11 @@ variocloudmap <- function(sp.obj, name.var, bin = NULL, quantiles = TRUE, names.
     dev.off()
     
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = baseenv())
+    assign("GeoXp.open", FALSE, envir = globalenv())
     cat("Results have been saved in last.select object \n")
     cat("Map has been saved in", map_save, "\n")
     cat("Figure has been saved in", fig_save, "\n")
-    assign("last.select", which(obs), envir = envir)
+    assign("last.select", which(obs), envir = globalenv())
     
     dev.off(num_carte)
     dev.off(num_graph)

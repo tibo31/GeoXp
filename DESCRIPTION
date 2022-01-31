@@ -7,8 +7,8 @@ Date: 2021-02-01
 Author: Yves Aragon [ctb], Thibault Laurent [cre, aut], Lauriane Robidou [ctb], Anne
         Ruiz-Gazen [ctb], Christine Thomas-Agnan [ctb]
 Maintainer: Thibault Laurent <thibault.laurent@univ-tlse1.fr>
-Depends: R (>= 3.3.0), sp (>= 1.0), spData, spdep
-Imports: KernSmooth, qgam, rgeos, rgl, robustbase, splancs, stats, tcltk
+Depends: R (>= 3.3.0), sp (>= 1.0), spData, spdep, tcltk
+Imports: KernSmooth, qgam, rgeos, rgl, robustbase, splancs, stats
 Suggests: maptools, MatrixModels, RANN, rgdal
 Description: A tool for researchers in spatial statistics,
         spatial econometrics, geography, ecology etc allowing to link

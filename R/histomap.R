@@ -3,8 +3,6 @@ histomap <- function(sp.obj, name.var, nbcol = 10, type = c("count", "percent", 
                      cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "", ylab = "", 
                      axes = FALSE, lablong = "", lablat = "") {
   
-  envir <- as.environment(1)
-  
   # Verification of the Spatial Object sp.obj
   class.obj <- class(sp.obj)[1]
   spdf <- (class.obj == "SpatialPolygonsDataFrame")
@@ -73,16 +71,15 @@ histomap <- function(sp.obj, name.var, nbcol = 10, type = c("count", "percent", 
 
   # Is there a Tk window already open ?
   if (interactive()) {
-    if (!exists("GeoXp.open", envir = baseenv()) ||
-        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
-      assign("GeoXp.open", TRUE, envir = baseenv())
+    if (!exists("GeoXp.open", envir = globalenv())) {
+      assign("GeoXp.open", TRUE, envir = globalenv())
     } else {
-      if (get("GeoXp.open", envir = baseenv())) {
+      if (get("GeoXp.open", envir = globalenv())) {
         stop(
           "A GeoXp function is already open. 
           Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
       } else {
-        assign("GeoXp.open", TRUE, envir = baseenv())
+        assign("GeoXp.open", TRUE, envir = globalenv())
       }
     }
   }
@@ -131,9 +128,9 @@ histomap <- function(sp.obj, name.var, nbcol = 10, type = c("count", "percent", 
          obs <<- selectmap(var1 = long, var2 = lat, obs = obs, 
                            Xpoly = loc[1], Ypoly = loc[2], method = "point")
       else {
-        if (gContains(sp.obj, SpatialPoints(cbind(loc$x, loc$y), proj4string = CRS(proj4string(sp.obj))))) {
+        if (rgeos::gContains(sp.obj, SpatialPoints(cbind(loc$x, loc$y), proj4string = CRS(proj4string(sp.obj))))) {
           for (i in 1:nrow(sp.obj)) {
-            if (gContains(sp.obj[i, ], SpatialPoints(cbind(loc$x,loc$y), proj4string = CRS(proj4string(sp.obj))))) {
+            if (rgeos::gContains(sp.obj[i, ], SpatialPoints(cbind(loc$x,loc$y), proj4string = CRS(proj4string(sp.obj))))) {
               obs[i] <<- !obs[i]
               break
             }
@@ -374,7 +371,7 @@ histomap <- function(sp.obj, name.var, nbcol = 10, type = c("count", "percent", 
 
   quitfunc <- function() {
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = baseenv())
+    assign("GeoXp.open", FALSE, envir = globalenv())
     dev.off(num_graph)
     dev.off(num_carte)
     if (!is.na(num_supp))
@@ -425,14 +422,14 @@ histomap <- function(sp.obj, name.var, nbcol = 10, type = c("count", "percent", 
     }
     
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = baseenv())
+    assign("GeoXp.open", FALSE, envir = globalenv())
     cat("Results have been saved in last.select object \n")
     cat("Map has been saved in", map_save, "\n")
     cat("Figure has been saved in", fig_save, "\n")
     if(!is.na(num_supp))
       cat("Supplemental figure has been saved in", fig_supp, "\n")
       
-    assign("last.select", which(obs), envir = envir)
+    assign("last.select", which(obs), envir = globalenv())
     
     dev.off(num_carte)
     dev.off(num_graph)
