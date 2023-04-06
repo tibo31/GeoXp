@@ -21,7 +21,7 @@
 \def\SP{\texttt{S-PLUS}\/}
 \def\SS{\texttt{S}\/}
 
-\title{Some examples of use of the \pkg{GeoXp} package (version 1.5.0)}
+\title{Some examples of use of the \pkg{GeoXp} package (version 2.0.0)}
 \author{T. Laurent\footnote{thibault.laurent@tse-fr.eu}, A. Ruiz-Gazen\footnote{anne.ruiz-gazen@tse-fr.eu} and C. Thomas-Agnan\footnote{christine.thomas@tse-fr.eu} \cr
 {\normalsize Toulouse School of Economics} }
 \begin{document}
@@ -73,26 +73,24 @@ An interactive function\footnote{The non interactive functions included in
 of the \pkg{GeoXp} package can be called by using one of these following codes:
 
 \begin{itemize}
-\item \code{function(sp.obj, name.var,...,options)}, if there is only one variable of interest,
-\item \code{function(sp.obj, names.var,...,options)}, if there are several variables of interest,
-\item \code{function(sp.obj, name.var, nb.obj...,options)}, if there is one variable of interest and the use
+\item \code{function(sf.obj, name.var,...,options)}, if there is only one variable of interest,
+\item \code{function(sf.obj, names.var,...,options)}, if there are several variables of interest,
+\item \code{function(sf.obj, name.var, nb.obj...,options)}, if there is one variable of interest and the use
 of a spatial weight matrix.
 \end{itemize}
 
 
-The first argument \code{sp.obj} is a Spatial Class object as defined by R. Bivand
-in \pkg{sp} package. It contains both spatial coordinates and characteristics of spatial units. \newline
+The first argument \code{sf.obj} is a Spatial Class object as defined by E. Pebezma
+in \pkg{sf} package. It contains both spatial coordinates and characteristics of spatial units. \newline
 
 Presently, \pkg{GeoXp} draws a map, considering spatial units like points: a spatial unit
 is defined geographically by two scalars $x$ and $y$. Indeed,
 for drawing a map, the spatial coordinates of spatial units have been
-extracted from \code{sp.obj} by using the function \code{coordinates}, which can be applied on
-to any Spatial Class object (\code{SpatialPointsDataFrame}, \code{SpatialPolygonsDataFrame}, etc). \newline
+extracted from \code{sf.obj} by using the function \code{st\_coordinates}. \newline
 
 \noindent It also prints a statistical graphic. The variable(s) of interest are given by \code{name.var} or
 \code{names.var}, a (vector of) character (or numeric) which indicates the column(s) of
-the \code{sp.obj@data} to be used in the analysis. The \code{sp.obj@data} is by construction,
-a \code{data.frame}.  \newline
+the \code{sf} to be used in the analysis.   \newline
 
 \noindent In the function call, the \code{...} correspond to specificities of each function (more details in ~\ref{sec3}).
 For example, it could indicate the number of bars for a histogram, if the y-axis should represent or not
@@ -109,9 +107,7 @@ estate from largest cities in France in 2008.
 
 \begin{footnotesize}
 <<echo=TRUE,eval=TRUE>>=
-data(immob)
-class(immob)
-names(immob)
+data(immob, package = "GeoXp")
 @
 \end{footnotesize}
 
@@ -119,23 +115,13 @@ names(immob)
 cities in the variables \code{longitude} and \code{latitude}. It also contains  several
 variables corresponding to the city names, the selling and renting prices, etc... \newline
 
-\noindent The first operation consists in creating a Spatial Object. First, we have to
-create a \code{SpatialPoints} object by specifying a $2 \times d$ matrix with longitude and latitude:
+\noindent The first operation consists in creating an sf Object
 
 \begin{footnotesize}
 <<echo=TRUE,eval=TRUE>>=
-immob.sp <- SpatialPoints(cbind(immob$longitude, immob$latitude))
-class(immob.sp)
-@
-\end{footnotesize}
-
-\noindent The second operation consists in creating a \code{SpatialPointsDataFrame} by
-coupling a \code{SpatialPoints} object with a \code{data.frame}:
-
-\begin{footnotesize}
-<<echo=TRUE,eval=TRUE>>=
-immob.spdf <- SpatialPointsDataFrame(immob.sp, immob)
-class(immob.spdf )
+require(sf)
+immob.sf <- st_as_sf(immob, coords = c("longitude", "latitude"))
+class(immob.sf)
 @
 \end{footnotesize}
 
@@ -148,7 +134,7 @@ with number 3 corresponding to the statistical graph, in this case, the histogra
 
 \begin{footnotesize}
 <<echo=TRUE,eval=FALSE>>=
-histomap(immob.spdf, "prix.vente")
+histomap(immob.sf, "prix.vente")
 @
 \end{footnotesize}
 
@@ -181,29 +167,22 @@ a new function.
 \section{Description of the Options}
 \subsection{The options}
 \begin{verbatim}
-function(sp.obj,...,
-names.attr=names(sp.obj), criteria=NULL, carte=NULL,
-identify=FALSE, cex.lab=0.8, pch=16, col="lightblue3",
-xlab="angle", ylab="absolute magnitude", axes=FALSE,
-lablong="", lablat="")
+function(sf.obj,..., criteria = NULL, carte = NULL,
+  identify = FALSE, cex.lab = 0.8, pch = 16, col = "lightblue3",
+  xlab = "angle", ylab = "absolute magnitude", axes = FALSE,
+  lablong = "", lablat = "")
 \end{verbatim}
 
 \noindent Most of these options are common to all functions. It can differ depending on the function, but the
 principles remain the same.
  \begin{itemize}
-  \item \code{names.attr:} a vector of character of size the number of variables included in \code{sp.obj@data}.
-  The option is used for changing the variable names included in the \code{sp.obj@data}
+  The option is used for changing the variable names included in the \code{sf.obj@data}
   \item{criteria:} a vector of boolean of size the number of spatial units; it allows to represent
    preselected sites with a green cross, by clicking on \code{preselected sites} on the Tk window
-  \item \code{carte:} in the case where \code{sp.obj} is a \code{SpatialPolygonDataFrame}, the user will have the
-   opportunity to draw the polygons of Spatial unit by using the \code{Draw Spatial contours} button in the
-   Tk window. However, if the \code{sp.obj} is  a \code{SpatialPointsDataFrame}, the user may specify by using
-   the \code{carte} option, a matrix with 2 columns for drawing spatial polygonal contours: x and y coordinates of the
-   vertices of the polygon. The functions \code{polylist2list()} and \code{spdf2list()}
-   convert some spatial objects (\code{Polylist} and \code{SpatialPolygonDataFrame})
-   into matrices as decribed above to draw a background map.
-  \item \code{identify:} if TRUE, the names of selected sites will be printed on the map. The names of spatial units
-  correpond to \code{row.names} of the attribute table \code{row.names(sp.obj@data)}.
+  \item \code{carte:} in the case where \code{sf.obj} is a \code{POINT} spatial feature, the user will have the
+   opportunity to draw another feature by using the \code{Draw Spatial contours} button in the
+   Tk window. 
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item \code{cex.lab:} a numeric value, it gives the character size of labels
   \item \code{pch:} 16 by default, it gives the symbol for selected points
   \item \code{col:} "lightblue3" by default, it gives the color of the bars of a histogram, the
@@ -221,15 +200,13 @@ principles remain the same.
 We consider the data set \code{immob} again. We would like to draw as background on the map
 the spatial contours of the 21 regions in the metropolitan France\footnote{We have excluded here the regions
 22 and 23 which corresponds to the Corse and Andorre} included in a \code{shapefile}.
-For this, we first use the function \code{readShapePoly}, included in the \pkg{maptools}
-package, to import the file. Then, we use the function \code{spdf2list} to convert
-the \code{SpatialPolygonsDataFrame} into a matrix of numeric with 2 columns ($x$ and $y$):
+For this, we first use the function \code{st\_read}, included in the \pkg{sf}
+package, to import the file. 
 
 \begin{footnotesize}
 <<echo=TRUE,eval=TRUE>>=
-require("rgdal")
-midiP <- readOGR(system.file("shapes/region.shp", package="GeoXp")[1])
-cont_midiP <- spdf2list(midiP[-c(22,23),])$poly
+require(sf)
+midiP <- st_read(system.file("shapes/region.shp", package="GeoXp")[1])
 @
 \end{footnotesize}
 
@@ -244,16 +221,16 @@ criteria <- (immob$latitude > mean(immob$latitude))
 \noindent In the following code, the option \code{nbcol=15} and \code{type = "percent"} are specific
 to the function \code{histomap}. The first one indicates the number of bars to draw and the second
 the fact that the y-axis of the graphic should represent the percentage of individuals. Notice that
-the variable of interest corresponds here to the 7th variable of the \code{sp.obj},
+the variable of interest corresponds here to the 7th variable of the \code{sf.obj},
 i.e. the variation of selling price observed between 2007 and 2008.
 
 \begin{footnotesize}
 <<echo=TRUE,eval=FALSE>>=
 histomap(immob.spdf, 7, nbcol = 15, type = "percent",
- names.attr = names(immob), criteria = criteria, carte = cont_midiP,
- identify = TRUE, cex.lab = 0.5, pch = 12, col = "pink",
- xlab = "variation price", ylab = "percent", axes = TRUE, lablong = "x",
- lablat = "y")
+  criteria = criteria, carte = midiP,
+  identify = "Nom", cex.lab = 0.5, pch = 12, col = "pink",
+  xlab = "variation price", ylab = "percent", axes = TRUE, lablong = "x",
+  lablat = "y")
 @
 \end{footnotesize}
 
@@ -312,10 +289,10 @@ the choice of kernel.
 \item \code{driftmap}: the device is divided into 2 rows and 2 columns which contains :
 \begin{itemize}
 \item cell 1:the selected sites divided into $m$ rows and $q$ columns ($m$ and $q$ are selected with the tk window),
-\item cell 2: a scatter plot with \code{coordinates(sp.obj)[,2]} on the x-axis and the mean and median of \code{name.var}
+\item cell 2: a scatter plot with \code{coordinates(sf.obj)[,2]} on the x-axis and the mean and median of \code{name.var}
 calculated for the $m$ rows on the y-axis,
 \item cell 3: a scatter plot with the mean and
-median of \code{name.var} calculated for the $q$ columns in x-axis and \code{coordinates(sp.obj)[,1]}
+median of \code{name.var} calculated for the $q$ columns in x-axis and \code{coordinates(sf.obj)[,1]}
 in y-axis,
 \item cell 4: a legend indicating the direction of the North. Specific options are
 \code{name.var}, \code{interpol=TRUE}, \code{nuage=TRUE}, \code{lty=1:2}, \code{cex=0.7} (see the help
@@ -365,7 +342,7 @@ and a vector of character with the name (or the column numbers) of the variables
 <<echo=TRUE,eval=FALSE>>=
 dbledensitymap(immob.spdf, c("prix.vente", "prix.location"),
                xlab = c("selling price", "rending price"), 
-               identify = TRUE, cex.lab = 0.5, carte = cont_midiP)
+               identify = "Nom", cex.lab = 0.5, carte = midiP)
 @
 \end{footnotesize}
 
@@ -422,6 +399,7 @@ functions. For example, the \code{tri2nb} function builds a spatial weight matri
 
 \begin{footnotesize}
 <<echo=TRUE,eval=TRUE>>=
+library(spdep)
 W.nb <- tri2nb(cbind(immob$longitude, immob$latitude))
 class(W.nb)
 @
@@ -451,8 +429,8 @@ and use the \code{neighbourmap}. We indicate as third element, the spatial weigh
  class \code{nb}.
 \begin{footnotesize}
 <<echo=TRUE,eval=FALSE>>=
-neighbourmap(immob.spdf, "prix.vente", W.nb, identify = TRUE, cex.lab = 0.5,
- carte = cont_midiP)
+neighbourmap(immob.spdf, "prix.vente", W.nb, identify = "Nom", cex.lab = 0.5,
+ carte = midiP)
 @
 \end{footnotesize}
 
