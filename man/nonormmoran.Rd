@@ -46,20 +46,24 @@ a list with \code{nobs} is the number of observations,
 \examples{
 ###
 # data baltimore
-data(baltimore)
+if (require(spData, quietly = TRUE)) {
+  data(baltimore, package = "spData")
+}
 
 # a spatial weight matrix constructed in the matrix format
-W <- makeneighborsw(cbind(baltimore$X,baltimore$Y),method="neighbor",4)
+W <- makeneighborsw(cbind(baltimore$X, baltimore$Y), method = "neighbor", 4)
 
 # when W is not row-normalised ...
-nonormmoran(baltimore$PRICE,cbind(rep(1,nrow(baltimore)),baltimore[,14:15]),W)
+nonormmoran(baltimore$PRICE, cbind(rep(1, nrow(baltimore)), 
+  baltimore[, 14:15]), W)
 # when W is row_normalised ...
-nonormmoran(baltimore$PRICE,cbind(rep(1,nrow(baltimore)),baltimore[,14:15]),normw(W))
+nonormmoran(baltimore$PRICE, cbind(rep(1, nrow(baltimore)), 
+  baltimore[, 14:15]), normw(W))
 
 # If we compare to the function lm.morantest
-baltimore.lm<-lm(PRICE~LOTSZ+SQFT,data=baltimore)
+baltimore.lm <- lm(PRICE ~ LOTSZ + SQFT, data = baltimore)
 
-lm.morantest(baltimore.lm, mat2listw(W))
+spdep::lm.morantest(baltimore.lm, spdep::mat2listw(W, style = "W"))
 }
 
 \seealso{\code{\link{moranplotmap}},\code{\link{neighbourmap}},\code{\link{makeneighborsw}},\code{\link{normw}} }

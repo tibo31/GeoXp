@@ -1,5 +1,4 @@
-choixvarfunc <- function(title, question, liste)
-  {
+choixvarfunc <- function(title, question, liste) {
     tt2 <- tktoplevel()
     scr <- tkscrollbar(tt2, repeatinterval = 5, command = function(...) tkyview(lstbox,...))
     lstbox <- tklistbox(tt2, height = 4, selectmode = "single",
@@ -12,8 +11,8 @@ choixvarfunc <- function(title, question, liste)
     tkgrid.configure(scr, rowspan = 4, sticky = "nsw")
     var <- liste
 
-    for(i in 1:length(var))
-     {tkinsert(lstbox, "end", var[i])
+    for(i in 1:length(var)){
+      tkinsert(lstbox, "end", var[i])
      }
 
     OnOK <- function()

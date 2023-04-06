@@ -3,25 +3,24 @@
 \title{Interactive Bar plot and map}
 \description{
 The function \code{barmap()} draws a bar plot (vertical bar) of the given factor variable
-\code{name.var} and a map with sites of coordinates \code{coordinates(sp.obj)}.}
+\code{name.var} and a map with sites of coordinates \code{sf.obj}.}
 
 \usage{
-barmap(sp.obj, name.var, type = c("count","percent"), names.arg = "", 
- names.attr = names(sp.obj), criteria = NULL, carte = NULL, identify = FALSE,
+barmap(sf.obj, name.var, type = c("count","percent"), names.arg = "", 
+ criteria = NULL, carte = NULL, identify = NULL,
  cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "", ylab = "", 
  axes = FALSE, lablong = "", lablat = "")
 }
 
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{name.var}{a character; attribute name or column number in attribute table}
   \item{type}{Character string indicating type of histogram to be drawn. "percent" and "count" give relative frequency and frequency histograms.}
   \item{names.arg}{a vector of level names of name.var}
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of boolean of size the number os spatial units, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{a vector of symbol which must be equal to the number of level else all sites are printed whith pch[1]}
   \item{col}{a vector of colors which must be equal to the number of level else all sites and all bars are printed with col[1]}
@@ -55,18 +54,18 @@ Roger S.Bivand, Edzer J.Pebesma, Virgilio Gomez-Rubio (2009),  \emph{Applied Spa
 \examples{
 ######
 # data eire
-require("rgdal")
-eire <- readOGR(system.file("shapes/eire.shp", package="spData")[1])
+require(sf)
+eire <- st_read(system.file("shapes/eire.shp", package="spData")[1])
 
 # a basic usage ...
 barmap(eire, "pale")
 
 # ... with all options
 barmap(eire, 3, type = "percent", col = c("pink", "orange"), 
- names.arg = c("not pale", "pale"), names.attr = names(eire),
- criteria = NULL, identify = TRUE, cex.lab = 0.8, pch = c(10, 11),
- xlab = "Are majority people are pale ?", ylab = "Percent", 
- axes = TRUE, lablong = "longitude", lablat = "latitude")
+  names.arg = c("not pale", "pale"), 
+  criteria = NULL, identify = TRUE, cex.lab = 0.8, 
+  xlab = "Are majority people are pale ?", ylab = "Percent", 
+  axes = TRUE, lablong = "longitude", lablat = "latitude")
 }
 \keyword{spatial}
 \keyword{univar}

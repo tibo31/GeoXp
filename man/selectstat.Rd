@@ -9,7 +9,7 @@ Moran, Angleplot, Variocloud, Cluster, or PCA. Most of the GeoXp functions call 
 }
 \usage{
 selectstat(var1, var2, obs, Xpoly, Ypoly, method,
-nbcol, W, F, long, lat)
+  nbcol, W, F, long, lat)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

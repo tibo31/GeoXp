@@ -1,71 +1,67 @@
-ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL,
-                     carte = NULL, identify = FALSE, cex.lab = 0.8, pch = 16, col = "lightblue3",
+ginimap <-function(sf.obj, name.var, criteria = NULL,
+                     carte = NULL, identify = NULL, cex.lab = 0.8, pch = 16, col = "lightblue3",
                      xlab = "", ylab = "", axes = FALSE, lablong = "", lablat = "") {
 
-  # Verification of the Spatial Object sp.obj
-  class.obj <- class(sp.obj)[1]
+  ###################################################
+  ########## COMMON to ALL FUNCTIONS in GeoXp
   
-  spdf <- (class.obj == "SpatialPolygonsDataFrame")
-  if (substr(class.obj, 1, 7) != "Spatial")
-    stop("sp.obj may be a Spatial object")
+  envir <- globalenv()
+  # Verification of the Spatial Object sf.obj
+  class.obj <- class(sf.obj)[1]
   
-  if (substr(class.obj, nchar(class.obj) - 8, nchar(class.obj)) != "DataFrame")
-    stop("sp.obj should contain a data.frame")
+  if(class.obj != "sf") 
+    stop("sf.obj may be a sf object")
   
-  if (!is.numeric(name.var) &
-      is.na(match(as.character(name.var), names(sp.obj))))
-    stop("name.var is not included in the data.frame of sp.obj")
-  
-  if (length(names.attr) != length(names(sp.obj)))
-    stop("names.attr should be a vector of character with a length equal to the number of variable")
+  if(!(name.var %in% names(sf.obj)))
+    stop("name.var is not included in the sf object")
   
   # we propose to refind the same arguments used in first version of GeoXp
-  long <- coordinates(sp.obj)[, 1]
-  lat <- coordinates(sp.obj)[, 2]
+  if (st_geometry_type(sf.obj, by_geometry = F) %in% c("POINT"))
+    my_coords <- st_coordinates(st_geometry(sf.obj))
+  else
+    my_coords <- st_coordinates(st_point_on_surface(st_geometry(sf.obj)))
+  long <- my_coords[, 1]
+  lat <- my_coords[, 2]
   
-  var <- sp.obj@data[, name.var]
-  
-  # verify the type of the main variable
-  if (!(is.integer(var) ||
-        is.double(var)))
-    stop("the variable name.var should be a numeric variable")
-  
-  listvar <- sp.obj@data
-  listnomvar <- names.attr
+  listvar <- as.data.frame(st_drop_geometry(sf.obj))
+  listnomvar <- colnames(listvar)
   
   # for identifying the selected sites
-  if(identify)
-    label <- row.names(listvar)
+  if (!is.null(identify) && identify %in% colnames(sf.obj))
+    label <- sf.obj[[identify]]
   else
     label <- ""
   
-  # initialisation
-  obs <- vector(mode = "logical", length = length(long))
   nointer <- FALSE
   nocart <- FALSE
   buble <- FALSE
-  legends <- list(FALSE, FALSE, "", "")
   z <- NULL
   legmap <- NULL
+  legends <- list(FALSE, FALSE, "", "")
   labvar <- c(xlab, ylab)
+  
   graphChoice <- ""
   varChoice1 <- ""
   varChoice2 <- ""
   choix <- ""
-  listgraph <- c("Histogram", "Barplot", "Scatterplot")
   method <- ""
-  labmod <- ""
-  col2 <- "blue"
-  col3 <- col[1]
-  pch2 <- pch[1]
-  graph <- "Lorentz"
-  angle <- NULL
-  ptX <- NULL
+  listgraph <- c("Histogram", "Barplot", "Scatterplot")
   
-  # transformation data.frame en matrix
-  if ((length(listvar) > 0) &&
-      (dim(as.matrix(listvar))[2] == 1))
-    listvar <- as.matrix(listvar)
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = envir) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = envir)
+    } else {
+      if (get("GeoXp.open", envir = envir)) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = envir)
+      }
+    }
+  }
   
   # Windows device
   if(length(dev.list()) == 0 & options("device") == "RStudioGD")
@@ -79,11 +75,30 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
   # number of devices
   num_supp <- NA
   
+  #####################################################
+  ##### Arguments proper to each function 
+  
+  var <- sf.obj[[name.var]]
+  obs <- vector(mode = "logical", length = length(long))
+  
   # Parametres sur Gini
+  graph <- "Lorentz"
+  angle <- NULL
+  ptX <- NULL
   result <- gini(-var)
   F <- result$F
   G <- result$G
   GINI <- result$gini
+  
+  # verify the type of the main variable
+  if(!(is.integer(var) || is.double(var))) 
+    stop("the variable name.var should be a numeric variable")
+  # if add a graphic barplot
+  labmod <- ""
+  # if colors 
+  col2 <- "blue"
+  col3 <- col[1]
+  pch2 <- pch[1]
   
   ####################################################
   # selection d'un point sur la courbe de Lorentz
@@ -124,7 +139,7 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
       title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
             cex.sub = 0.8, font.sub = 3, col.sub = "red")
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer, label = label,
             symbol = pch2, couleurs = col2, carte = carte, nocart = nocart, legmap = legmap,
             legends = legends, axis = axes, labmod = labmod, lablong = lablong, lablat = lablat,
@@ -145,7 +160,7 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
     if (length(carte) != 0) {
       nocart <<- !nocart
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer, label = label,
             symbol = pch2, couleurs = col2, carte = carte, nocart = nocart, legmap = legmap,
             legends = legends, axis = axes, labmod = labmod, lablong = lablong, lablat = lablat,
@@ -176,7 +191,7 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
                        icon = "warning", type = "ok")
         } else {
           res1 <- choix.couleur(graphChoice, listvar, listnomvar, 
-                                varChoice1, legends, col, pch, spdf = spdf,
+                                varChoice1, legends, col, pch, spdf = F,
                                 num_graph, num_carte)
           method <<- res1$method
           col2 <<- res1$col2
@@ -195,7 +210,7 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
                     obs = obs, num = num_supp, graph = graphChoice, couleurs = col3,
                     symbol = pch, labvar = c(varChoice1, varChoice2))
           
-          carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+          carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
                 buble = buble, cbuble = z, criteria = criteria, nointer = nointer, label = label,
                 symbol = pch2, couleurs = col2, carte = carte, nocart = nocart, legmap = legmap,
                 legends = legends, axis = axes, labmod = labmod, lablong = lablong, lablat = lablat,
@@ -222,7 +237,7 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
               graph = "Lorentz", labvar = labvar, symbol = pch,
               couleurs = col, F = F, G = G)
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           buble = buble, cbuble = z, criteria = criteria, nointer = nointer, label = label,
           symbol = pch2, couleurs = col2, carte = carte, nocart = nocart, legmap = legmap,
           legends = legends, axis = axes, labmod = labmod, lablong = lablong, lablat = lablat,
@@ -241,7 +256,7 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
   
   quitfunc <- function() {
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     dev.off(num_graph)
     dev.off(num_carte)
     if (!is.na(num_supp))
@@ -273,7 +288,7 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
   }    
   
   pdf(map_save)
-  carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = dev.list()[length(dev.list())],
+  carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = dev.list()[length(dev.list())],
         buble = buble, cbuble = z, criteria = criteria, nointer = nointer, label = label,
         symbol = pch2, couleurs = col2, carte = carte, nocart = nocart, legmap = legmap,
         legends = legends, axis = axes, labmod = labmod, lablong = lablong, lablat = lablat,
@@ -296,14 +311,14 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
   }
   
   tkdestroy(tt)
-  assign("GeoXp.open", FALSE, envir = globalenv())
+  assign("GeoXp.open", FALSE, envir = envir)
   cat("Results have been saved in last.select object \n")
   cat("Map has been saved in", map_save, "\n")
   cat("Figure has been saved in", fig_save, "\n")
   if(!is.na(num_supp))
     cat("Supplemental figure has been saved in", fig_supp, "\n")
   
-  assign("last.select", which(obs), envir = globalenv())
+  assign("last.select", which(obs), envir = envir)
   
   dev.off(num_carte)
   dev.off(num_graph)
@@ -318,7 +333,7 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
   fnointer <- function() {
     if (length(criteria) != 0) {
       nointer <<- !nointer
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer, label = label,
             symbol = pch2, couleurs = col2, carte = carte, nocart = nocart, legmap = legmap,
             legends = legends, axis = axes, labmod = labmod, lablong = lablong, lablat = lablat,
@@ -340,7 +355,7 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
     z <<- res2$z
     legmap <<- res2$legmap
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           buble = buble, cbuble = z, criteria = criteria, nointer = nointer, label = label,
           symbol = pch2, couleurs = col2, carte = carte, nocart = nocart, legmap = legmap,
           legends = legends, axis = axes, labmod = labmod, lablong = lablong, lablat = lablat,
@@ -373,13 +388,12 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
         tkmessageBox(message = msg)
       
       angle <<- as.numeric(angle)
-      obs <<- (var <= angle)
+      obs <<- (var <= as.numeric(angle))
       graph <<- "VLorentz"
-      
-      graphique(var1 = var, obs = obs, num = num_graph, graph = "VLorentz", Xpoly = angle, labvar = labvar, 
+      graphique(var1 = var, obs = obs, num = num_graph, graph = "VLorentz", Xpoly = as.numeric(angle), labvar = labvar, 
                 symbol = pch, couleurs = col, F = F, G = G)
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer, label = label,
             symbol = pch2, couleurs = col2, carte = carte, nocart = nocart, legmap = legmap,
             legends = legends, axis = axes, labmod = labmod, lablong = lablong, lablat = lablat,
@@ -403,30 +417,30 @@ ginimap <-function(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL
   
   # Is there a Tk window already open ?
   if (interactive()) {
-    if(!exists("GeoXp.open", envir = globalenv())) {
+    if(!exists("GeoXp.open", envir = envir) || length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
       graphique(var1 = var, obs = obs, num = num_graph, graph = "Lorentz", 
                 labvar = labvar, symbol = pch, couleurs = col, F = F, G = G)
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer, label = label,
             symbol = pch2, couleurs = col2, carte = carte, nocart = nocart, legmap = legmap,
             legends = legends, axis = axes, labmod = labmod, lablong = lablong, lablat = lablat,
             cex.lab = cex.lab, method = method, classe = listvar[, which(listnomvar == varChoice1)])
-      assign("GeoXp.open", TRUE, envir = globalenv())
+      assign("GeoXp.open", TRUE, envir = envir)
     } else {
-      if(get("GeoXp.open", envir = globalenv())) {
+      if(get("GeoXp.open", envir = envir)) {
         stop("Warning : a GeoXp function is already open. 
              Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
         } else {
           graphique(var1 = var, obs = obs, num = num_graph, graph = "Lorentz", 
                     labvar = labvar, symbol = pch, couleurs = col, F = F, G = G)
          
-        carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+        carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
               buble = buble, cbuble = z, criteria = criteria, nointer = nointer, label = label,
               symbol = pch2, couleurs = col2, carte = carte, nocart = nocart, legmap = legmap,
               legends = legends, axis = axes, labmod = labmod, lablong = lablong, lablat = lablat,
               cex.lab = cex.lab, method = method, classe = listvar[, which(listnomvar == varChoice1)])
-        assign("GeoXp.open", TRUE, envir = globalenv())}
+        assign("GeoXp.open", TRUE, envir = envir)}
     }
   }
   

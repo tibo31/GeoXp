@@ -2,14 +2,13 @@ Package: GeoXp
 Type: Package
 Title: Interactive Exploratory Spatial Data Analysis
 Encoding: latin1
-Version: 1.6.6
-Date: 2021-02-01
+Version: 2.0.0
+Date: 2023-04-05
 Author: Yves Aragon [ctb], Thibault Laurent [cre, aut], Lauriane Robidou [ctb], Anne
         Ruiz-Gazen [ctb], Christine Thomas-Agnan [ctb]
 Maintainer: Thibault Laurent <thibault.laurent@univ-tlse1.fr>
-Depends: R (>= 3.3.0), sp (>= 1.0), spData, spdep, tcltk
-Imports: KernSmooth, qgam, rgeos, rgl, robustbase, splancs, stats
-Suggests: maptools, MatrixModels, RANN, rgdal
+Depends: R (>= 4.0.0), sf, spData, spdep
+Imports: KernSmooth, quantreg, rgl, robustbase, sp, stats, tcltk
 Description: A tool for researchers in spatial statistics,
         spatial econometrics, geography, ecology etc allowing to link
         dynamically statistical plots with elementary maps. This
@@ -27,6 +26,6 @@ Description: A tool for researchers in spatial statistics,
         to make the most of the multidimensionality of the data, 'GeoXp'
         includes some dimension reduction techniques such as PCA.
 License: GPL (>= 2)
-URL: http://www.jstatsoft.org/v47/i02/paper
+URL: https://www.jstatsoft.org/v47/i02/
 NeedsCompilation: no
 Repository: CRAN

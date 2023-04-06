@@ -307,13 +307,14 @@ graphique <- function (var1, var2, var3, obs, num, graph = "", couleurs = "",
         var1 = sort(var1),
         var2 = var2[order(var1)])
   #    fit <- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha1)
+      
        xSeq <- data.frame(cbind("var2" = rep(0, 1e3), 
                                 "var1" = seq(min(var1), max(var1), 
                                             length.out = 1e3)))
-       pred <- predict(alpha1, newdata = xSeq, se=TRUE)
+       pred <- predict(alpha1, newdata = xSeq)
   #    #fitmax  <- rqss(var2 ~ qss(var1, constraint= "CD", lambda = etendue), 
   #    #                tau = alpha1, data = temp_data, control = sfn.control(warn.mesg = FALSE))    
-       lines(xSeq$var1, pred$fit, col = "blue") 
+       lines(xSeq$var1, as.numeric(pred), col = "blue") 
     }
     
     if (length(var1[obs]) != 0) {
@@ -569,8 +570,8 @@ graphique <- function (var1, var2, var3, obs, num, graph = "", couleurs = "",
       plot(vect1, vect2, "n", xlab = labvar[1], ylab = labvar[2],
            xlim = c(0, max(vect1)), axes = FALSE)
       if (graph == "Angleplot") {
-        axis(1, c(0,pi/4,pi/2,3*pi/4,pi), c("0",expression(pi/4), 
-                                            expression(pi/2), expression(3*pi/4), expression(pi)))
+        axis(1, c(0,pi/4,pi/2,3*pi/4,pi), c("0",expression(pi/4),
+                expression(pi/2), expression(3*pi/4), expression(pi)))
       } else {
         axis(1)
       }
@@ -583,16 +584,19 @@ graphique <- function (var1, var2, var3, obs, num, graph = "", couleurs = "",
       xSeq <- data.frame(cbind("var2" = rep(0, 1e3), 
                                "var1" = seq(min(vect1), max(vect1), 
                                             length.out = 1e3)))
-      pred <- predict(alpha1, newdata = xSeq, se=TRUE)
+      # pred <- predict(alpha1, newdata = xSeq, se=TRUE)
+      pred <- predict(alpha1, newdata = xSeq)
       #    #fitmax  <- rqss(var2 ~ qss(var1, constraint= "CD", lambda = etendue), 
       #    #                tau = alpha1, data = temp_data, control = sfn.control(warn.mesg = FALSE))    
-      lines(xSeq$var1, pred$fit, col = "blue") 
+      # lines(xSeq$var1, pred$fit, col = "blue") 
+      lines(xSeq$var1, as.numeric(pred), col = "blue") 
       
       xSeq <- data.frame(cbind("var2" = vect2, 
                                "var1" = vect1))
-      pred <- predict(alpha1, newdata = xSeq, se=TRUE)
-      points(vect1[which(vect2 > pred$fit)],
-             vect2[which(vect2 > pred$fit)],
+      # pred <- predict(alpha1, newdata = xSeq, se=TRUE)
+      pred <- as.numeric(predict(alpha1, newdata = xSeq))
+      points(vect1[which(vect2 > pred)],
+             vect2[which(vect2 > pred)],
              col = couleurs, pch = 16, cex = 0.8)
       # plot.rqss(fitmax, add = TRUE, rug = FALSE, titles = "") 
     } else {
@@ -710,16 +714,16 @@ graphique <- function (var1, var2, var3, obs, num, graph = "", couleurs = "",
       xSeq <- data.frame(cbind("var2" = rep(0, 1e3), 
                                "var1" = seq(min(vect1), max(vect1), 
                                             length.out = 1e3)))
-      pred <- predict(alpha1, newdata = xSeq, se=TRUE)
+      pred <- predict(alpha1, newdata = xSeq)
       #    #fitmax  <- rqss(var2 ~ qss(var1, constraint= "CD", lambda = etendue), 
       #    #                tau = alpha1, data = temp_data, control = sfn.control(warn.mesg = FALSE))    
-      lines(xSeq$var1, pred$fit, col = "blue") 
+      lines(xSeq$var1, as.numeric(pred), col = "blue") 
       
       xSeq <- data.frame(cbind("var2" = vect2, 
                                "var1" = vect1))
-      pred <- predict(alpha1, newdata = xSeq, se=TRUE)
-      points(vect1[which(vect2 > pred$fit)],
-             vect2[which(vect2 > pred$fit)],
+      pred <- as.numeric(predict(alpha1, newdata = xSeq))
+      points(vect1[which(vect2 > pred)],
+             vect2[which(vect2 > pred)],
              col = couleurs, pch = 16, cex = 0.8)
       
       #points(vect1[which(vect2 > predict(fitmax, newdata = list(vect1 = vect1)))],
@@ -809,7 +813,7 @@ graphique <- function (var1, var2, var3, obs, num, graph = "", couleurs = "",
   
     
     if (graph == "VLorentz") {
-      G <- G[cumsum(as.data.frame(table(F))$Freq)]
+       G <- G[cumsum(as.data.frame(table(F))$Freq)]
       F <- F[cumsum(as.data.frame(table(F))$Freq)]
       var1u <- unique(var1)
       var1u <- c(0, var1u)
@@ -819,6 +823,7 @@ graphique <- function (var1, var2, var3, obs, num, graph = "", couleurs = "",
       lines(F, G, col = couleurs)
       if ((length(var1[obs]) != 0) && (length(var1[obs]) != length(var1))) {
         imax <- which.min(var1u <= Xpoly)
+  
         segments(F[imax - 1], 0, F[imax - 1], G[imax - 1], col = "red")
         segments(F[imax - 1], G[imax - 1], 0, G[imax - 1], col = "red")
         if (F[2] > G[2]) {

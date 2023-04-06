@@ -27,7 +27,7 @@ Prepared by T. Laurent.
 }
 
 \references{
-\url{http://www.fnaim.fr/}
+\url{https://www.fnaim.fr/}
 }
 
 \examples{

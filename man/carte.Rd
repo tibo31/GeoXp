@@ -9,7 +9,7 @@ GeoXp (this is not an interactive function).
 }
 
 \usage{
-carte(long, lat, obs, sp.obj = NULL, num, criteria = NULL, buble = FALSE, 
+carte(long, lat, obs, sf.obj = NULL, num, criteria = NULL, buble = FALSE, 
  cbuble = NULL, nointer = FALSE, carte = NULL, nocart = FALSE, label = "",
  cex.lab = NULL, symbol = 16, lablong = "", lablat = "", method = "", 
  W = NULL, couleurs = "blue", classe = NULL, legmap = NULL, 
@@ -20,7 +20,7 @@ carte(long, lat, obs, sp.obj = NULL, num, criteria = NULL, buble = FALSE,
   \item{long}{a vector x of size n}
   \item{lat}{a vector y of size n}
   \item{obs}{a boolean vector of size n with TRUE on selected sites}
-  \item{sp.obj}{a SpatialPolygonsDataFrame object}
+  \item{sf.obj}{an sf object}
   \item{num}{number of the device}
   \item{criteria}{a vector of size n of boolean with TRUE on specific sites (these for non interactive selection)}
   \item{buble}{a boolean with TRUE for drawing bubbles, FALSE otherwise}

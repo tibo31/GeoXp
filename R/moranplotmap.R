@@ -1,94 +1,64 @@
-moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran = FALSE, names.arg = c("H.-H.", "L.-H.", "L.-L.", "H.-L."),
-                         names.attr = names(sp.obj), criteria = NULL, carte = NULL, identify = FALSE, cex.lab = 0.8, pch = 16, col = "lightblue3",
+moranplotmap <- function(sf.obj, name.var, listw.obj, flower = FALSE, locmoran = FALSE, names.arg = c("H.-H.", "L.-H.", "L.-L.", "H.-L."),
+                         criteria = NULL, carte = NULL, identify = NULL, cex.lab = 0.8, pch = 16, col = "lightblue3",
                          xlab = "", ylab = "", axes = FALSE, lablong = "", lablat = "") {
 
-  # Verification of the Spatial Object sp.obj
-  class.obj <- class(sp.obj)[1]
-  spdf <- (class.obj == "SpatialPolygonsDataFrame")
   
-  if (substr(class.obj, 1, 7) != "Spatial")
-    stop("sp.obj may be a Spatial object")
+  ###################################################
+  ########## COMMON to ALL FUNCTIONS in GeoXp
   
-  if (substr(class.obj, nchar(class.obj) - 8, nchar(class.obj)) != "DataFrame")
-    stop("sp.obj should contain a data.frame")
+  envir <- globalenv()
+  # Verification of the Spatial Object sf.obj
+  class.obj <- class(sf.obj)[1]
   
-  if (!is.numeric(name.var) &
-      is.na(match(as.character(name.var), names(sp.obj))))
-    stop("name.var is not included in the data.frame of sp.obj")
+  if(class.obj != "sf") 
+    stop("sf.obj may be a sf object")
   
-  if (length(names.attr) != length(names(sp.obj)))
-    stop("names.attr should be a vector of character with a length equal to the number of variable")
+  if(!(name.var %in% names(sf.obj)))
+    stop("name.var is not included in the sf object")
   
   # we propose to refind the same arguments used in first version of GeoXp
-  long <- coordinates(sp.obj)[, 1]
-  lat <- coordinates(sp.obj)[, 2]
+  if (st_geometry_type(sf.obj, by_geometry = F) %in% c("POINT"))
+    my_coords <- st_coordinates(st_geometry(sf.obj))
+  else
+    my_coords <- st_coordinates(st_point_on_surface(st_geometry(sf.obj)))
+  long <- my_coords[, 1]
+  lat <- my_coords[, 2]
   
-  var <- sp.obj@data[, name.var]
-  
-  # verify the type of the main variable
-  if (!(is.integer(var) ||
-        is.double(var)))
-    stop("the variable name.var should be a numeric variable")
-  
-  listvar <- sp.obj@data
-  listnomvar <- names.attr
+  listvar <- as.data.frame(st_drop_geometry(sf.obj))
+  listnomvar <- colnames(listvar)
   
   # for identifying the selected sites
-  if(identify)
-    label <- row.names(listvar)
+  if (!is.null(identify) && identify %in% colnames(sf.obj))
+    label <- sf.obj[[identify]]
   else
     label <- ""
   
-  # We create a spatial weight matrix by using a matrix object
-  n <- nrow(sp.obj)
-  W <- matrix(0, n, n)
-  W.sn <- listw2sn(listw.obj)
-  W[as.matrix(W.sn[, 1:2])] <- W.sn[, 3]
-  
-  # Is W normalized ?
-  is.norm <- all(apply(W, 1, sum) == rep(1, n))
-  
-  #initialisation
-  if (xlab == "")
-    xlab <- name.var
-  if (ylab == "")
-    ylab <- paste("spatially lagged", name.var)
-  obs <- vector(mode = "logical", length = length(long))
-  obsq <- rep(0, length(long))
   nointer <- FALSE
   nocart <- FALSE
   buble <- FALSE
-  buble2 <- FALSE
-  maptest <- FALSE
-  classe <- rep(1, length(long))
-  
-  legends <- list(FALSE, FALSE, "", "")
-  legends2 <- list(FALSE, FALSE, "", "")
-  
   z <- NULL
-  z2 <- NULL
   legmap <- NULL
-  legmap2 <- NULL
-  num <- NULL
-  labvar <- c(xlab, ylab)
-  
+  legends <- list(FALSE, FALSE, "", "")
+
   graphChoice <- ""
   varChoice1 <- ""
   varChoice2 <- ""
   choix <- ""
+  method <- ""
   listgraph <- c("Histogram", "Barplot", "Scatterplot")
   
   # Is there a Tk window already open ?
   if (interactive()) {
-    if (!exists("GeoXp.open", envir = globalenv())) {
-      assign("GeoXp.open", TRUE, envir = globalenv())
+    if (!exists("GeoXp.open", envir = envir) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = envir)
     } else {
-      if (get("GeoXp.open", envir = globalenv())) {
+      if (get("GeoXp.open", envir = envir)) {
         stop(
           "A GeoXp function is already open. 
           Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
       } else {
-        assign("GeoXp.open", TRUE, envir = globalenv())
+        assign("GeoXp.open", TRUE, envir = envir)
       }
     }
   }
@@ -105,12 +75,43 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
   # number of devices
   num_supp <- NA
   
-  quad <- FALSE
+  #####################################################
+  ##### Arguments proper to each function 
   
-  # Transformation data.frame en matrix
-  if ((length(listvar) > 0) &&
-      (dim(as.matrix(listvar))[2] == 1))
-    listvar <- as.matrix(listvar)
+  var <- sf.obj[[name.var]]
+  obs <- vector(mode = "logical", length = length(long))
+  
+  # verify the type of the main variable
+  if(!(is.integer(var) || is.double(var))) 
+    stop("the variable name.var should be a numeric variable")
+  
+  # We create a spatial weight matrix by using a matrix object
+  n <- nrow(sf.obj)
+  W <- matrix(0, n, n)
+  W.sn <- listw2sn(listw.obj)
+  W[as.matrix(W.sn[, 1:2])] <- W.sn[, 3]
+  
+  # Is W normalized ?
+  is.norm <- all(apply(W, 1, sum) == rep(1, n))
+  
+  #initialisation
+  if (xlab == "")
+    xlab <- name.var
+  if (ylab == "")
+    ylab <- paste("spatially lagged", name.var)
+  
+  obsq <- rep(0, length(long))
+  buble2 <- FALSE
+  maptest <- FALSE
+  classe <- rep(1, length(long))
+  
+  legends2 <- list(FALSE, FALSE, "", "")
+  
+  z2 <- NULL
+  legmap2 <- NULL
+  num <- NULL
+  labvar <- c(xlab, ylab)
+  quad <- FALSE
   
   # Option sur le moran
   method <- ifelse(flower, "Neighbourplot1", "")
@@ -159,10 +160,10 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
       title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
             cex.sub = 0.8, font.sub = 3, col.sub = "red")
       
-      if(spdf & length(long) > 75 & !buble)
-        points(long,lat, pch = 16, col = "royalblue")
-      
-      } else { 
+      if (nrow(sf.obj) > 100 & st_geometry_type(sf.obj, by_geometry = F) == "POLYGON" & !buble) {
+        points(long, lat, pch = 16, col = "royalblue")
+      }
+    } else { 
       dev.set(num_graph)
       title("ACTIVE DEVICE", cex.main = 0.8, font.main = 3, col.main = "red")
       title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
@@ -175,28 +176,23 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
         loc <- locator(1)
         if (is.null(loc)) {
           quit <- TRUE
-          carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+          carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
                 carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
                 W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
                 nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
                 label = label, cex.lab = cex.lab, labmod = names.arg)   
           next
         }           
-        if(!spdf | length(long) > 75) { 
-          obs <<- selectmap(var1 = long, var2 = lat, obs = obs, Xpoly = loc[1], 
-                            Ypoly = loc[2], method = "point")
-          } else {
-            if (gContains(sp.obj, SpatialPoints(cbind(loc$x, loc$y),
-                                                proj4string = CRS(proj4string(sp.obj))))) {
-              for (i in 1:nrow(sp.obj)) {
-                if (gContains(sp.obj[i, ], SpatialPoints(cbind(loc$x, loc$y),
-                                                         proj4string = CRS(proj4string(sp.obj))))) {
-                  obs[i] <<- !obs[i] 
-                  break
-                }
-              }
-            } 
-          }
+        if (nrow(sf.obj) > 100 | st_geometry_type(sf.obj, by_geometry = F) == "POINT")
+          obs <<- selectmap(var1 = long, var2 = lat, obs = obs, 
+                            Xpoly = loc[1], Ypoly = loc[2], method = "point")
+        else {
+          my_points <- st_as_sf(data.frame(x = loc$x, y = loc$y), coords = c("x", "y"),
+                                crs = st_crs(sf.obj))
+          def <- as.vector(st_intersects(my_points, sf.obj, sparse = FALSE))
+          obs[def] <<- !obs[def]
+        }
+        
       } else {
         dev.set(num_graph)
         loc <- locator(1)
@@ -213,7 +209,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
       }
       
       #graphiques
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
             W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
             nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
@@ -229,9 +225,9 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
         title("ACTIVE DEVICE", cex.main = 0.8, font.main = 3, col.main = "red")
         title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
               cex.sub = 0.8, font.sub = 3, col.sub = "red")
-        if(spdf & length(long) > 75 & !buble) {
+        if (nrow(sf.obj) > 100 & st_geometry_type(sf.obj, by_geometry = F) == "POLYGON" & !buble) {
           points(long, lat, pch = 16, col = "royalblue")
-          }
+        }
       } else {
         dev.set(num_graph)
         title("ACTIVE DEVICE", cex.main = 0.8, font.main = 3, col.main = "red")
@@ -293,8 +289,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
     while (!quit) {
       if (maptest) {
         dev.set(num_carte)
-        if(spdf) 
-          points(long, lat, pch = 16, col = "royalblue")
+        points(long, lat, pch = 16, col = "royalblue")
         loc <- locator(1)
         if (is.null(loc)) {
           quit<-TRUE
@@ -327,7 +322,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
       }
       
       #graphiques
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
             W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
             nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
@@ -390,7 +385,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
     
     obs[which(obsq == num)] <<- !obs[which(obsq == num)]
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
           W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
           nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
@@ -442,7 +437,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
     if (!choix.col) {
       choix.col <<- TRUE 
       method <<- "Quadrant" 
-      res1 <- choix.couleur("Moran", col = col[1], pch = pch[1], legends = legends, spdf = spdf, 
+      res1 <- choix.couleur("Moran", col = col[1], pch = pch[1], legends = legends, spdf = T, 
                             num_graph = num_graph, num_carte = num_carte)     
       
     if (length(res1$col2) == 4) {
@@ -467,7 +462,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
       legends <<- list(legends[[1]], FALSE, legends[[3]], "") 
       }
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
           W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
           nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
@@ -515,7 +510,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
     if (length(carte) != 0) {
       nocart <<- !nocart
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
             W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
             nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
@@ -533,7 +528,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
   SGfunc<-function() {
     obs <<- vector(mode = "logical", length = length(long));
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
           W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
           nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
@@ -556,7 +551,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
   
   quitfunc <- function() {
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     dev.off(num_graph)
     dev.off(num_carte)
     if (!is.na(num_supp))
@@ -586,7 +581,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
     }    
     
     pdf(map_save)
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = dev.list()[length(dev.list())],
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = dev.list()[length(dev.list())],
           carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
           W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
           nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
@@ -608,14 +603,14 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
     }
     
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     cat("Results have been saved in last.select object \n")
     cat("Map has been saved in", map_save, "\n")
     cat("Figure has been saved in", fig_save, "\n")
     if(!is.na(num_supp))
       cat("Supplemental figure has been saved in", fig_supp, "\n")
     
-    assign("last.select", which(obs), envir = globalenv())
+    assign("last.select", which(obs), envir = envir)
     
     dev.off(num_carte)
     dev.off(num_graph)
@@ -631,7 +626,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
     if (length(criteria) != 0) {
       nointer <<- !nointer
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
             W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
             nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
@@ -655,7 +650,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
     z <<- res2$z
     legmap <<- res2$legmap
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
           W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
           nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
@@ -725,7 +720,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
   ###########   Representation
   
 
-  carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+  carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             carte = carte, nocart = nocart, classe = obsq, couleurs = col3, symbol = pch2,
             W = W, method = method, buble = buble, cbuble = z, criteria = criteria,
             nointer = nointer, legmap = legmap, legends = legends, axis = axes, lablong = lablong, lablat = lablat,
@@ -737,7 +732,7 @@ moranplotmap <- function(sp.obj, name.var, listw.obj, flower = FALSE, locmoran =
                 legmap = legmap2, legends = legends2, bin = is.norm)
   
   ####################################################
-  # cr?ation de la boite de dialogue
+  # creation de la boite de dialogue
   ####################################################
   
   if (interactive()) {

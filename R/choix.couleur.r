@@ -1,6 +1,7 @@
 choix.couleur <- function(graphChoice, listvar = NULL, listnomvar = NULL,
                           varChoice1 = NULL, legends, col, pch, spdf = FALSE,
                           num_graph, num_carte) {
+  
   if ((graphChoice == "Barplot") || (graphChoice == "Moran")) {
     if (graphChoice == "Barplot") {
       method <- "Cluster"
@@ -13,6 +14,7 @@ choix.couleur <- function(graphChoice, listvar = NULL, listnomvar = NULL,
         labmod <- c("Low-High", "High-High", "Low-Low", "High-Low")
       }
     
+    if (interactive()) {
     tt2 <- tktoplevel()
     
     OnOK <- function() {
@@ -25,7 +27,7 @@ choix.couleur <- function(graphChoice, listvar = NULL, listnomvar = NULL,
                                       98 + n.col, "]", sep = "")))
       tkpack(txt)
       
-      run <- function() {
+      big_run <- function() {
         code <- tclvalue(tkget(txt, "0.0", "end"))
         e <- try(parse(text = code))
         
@@ -87,7 +89,7 @@ choix.couleur <- function(graphChoice, listvar = NULL, listnomvar = NULL,
               }
               
               tt1 <- tktoplevel()
-              if(method == "Quadrant")
+              if (method == "Quadrant")
                 labelText12 <- tclVar("Do you want a legend for quadrants on the map")
               else
                 labelText12 <- tclVar("Do you want a legend for factors on the map")
@@ -103,8 +105,7 @@ choix.couleur <- function(graphChoice, listvar = NULL, listnomvar = NULL,
               tkgrid(tklabel(tt1, text = "    "))
               tkfocus(tt1)
               tkwait.window(tt1)
-              tkdestroy(tt)
-              
+              tkdestroy(tt)  
             }
             
             topMenu <- tkmenu(tt)
@@ -156,7 +157,7 @@ choix.couleur <- function(graphChoice, listvar = NULL, listnomvar = NULL,
             tkdestroy(tt2)
           }
           
-          if(!spdf) {
+          if (!spdf) {
             labelText13 <- tclVar("Do you want also symbols on the map ?")
             label13 <- tklabel(tt2, justify = "center", wraplength = "3i", 
                                text = tclvalue(labelText13))
@@ -180,7 +181,7 @@ choix.couleur <- function(graphChoice, listvar = NULL, listnomvar = NULL,
       tkconfigure(tt, menu = topMenu)
       fileMenu <- tkmenu(topMenu, tearoff = FALSE)
       
-      tkadd(topMenu, "command", label = "Run", command = run)
+      tkadd(topMenu, "command", label = "Run", command = big_run)
       tkwait.window(tt)
       tkdestroy(tt2)
     }
@@ -208,6 +209,7 @@ choix.couleur <- function(graphChoice, listvar = NULL, listnomvar = NULL,
     tkgrid(tklabel(tt2, text = "    "))
     tkfocus(tt2)
     tkwait.window(tt2)
+    }
   } else {
     legends <- list(legends[[1]], FALSE, legends[[3]], "")
     method <- ""

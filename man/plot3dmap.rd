@@ -7,21 +7,20 @@ The function \code{plot3dmap()} draws a 3d-plot of three given variables $names.
 and a map with sites of coordinates \code{coordinates(sp.obj)}.
 }
 \usage{
-plot3dmap(sp.obj, names.var, box = TRUE, names.attr = names(sp.obj), 
- criteria = NULL, carte = NULL, identify = FALSE, cex.lab = 0.8,
- pch = 16, col = "lightblue3", xlab = "", ylab = "", zlab = "", 
- axes = FALSE, lablong = "", lablat = "")
+plot3dmap(sf.obj, names.var, box = TRUE,  
+  criteria = NULL, carte = NULL, identify = NULL, cex.lab = 0.8,
+  pch = 16, col = "lightblue3", xlab = "", ylab = "", zlab = "", 
+  axes = FALSE, lablong = "", lablat = "")
 }
 
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{names.var}{a vector of three characters; attribute names or column numbers in attribute table}
   \item{box}{a boolean with TRUE for drawing a box on the scatterplot 3d}
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of boolean of size the number of Spatial units, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{16 by default, symbol for selected points}
   \item{col}{"lightblue3" by default, color of bars on the histogram}
@@ -54,37 +53,27 @@ It corresponds to the number of spatial units selected just before leaving the T
 \examples{
 \dontrun{ 
 # data on price indices of real estate in France
-######
-# data on price indices of real estate in France
-data(immob)
-row.names(immob) <- immob$Nom
+data(immob, package = "GeoXp")
 
 # immob is a data.frame object. We have to create
 # a Spatial object, by using first the longitude and latitude
-# to create Spatial Points object ...
-immob.sp <- SpatialPoints(cbind(immob$longitude, immob$latitude))
-# ... and then by integrating other variables to create SpatialPointsDataFrame
-immob.spdf <- SpatialPointsDataFrame(immob.sp, immob)
-# For more details, see vignette('sp', package="sp")
-
+require(sf)
+immob.sf <- st_as_sf(immob, coords = c("longitude", "latitude"))
 # optional : we add some contours that don't correspond to the spatial unit
 # but are nice for mapping
-require("rgdal")
-midiP <- readOGR(system.file("shapes/region.shp", package="GeoXp")[1])
-cont_midiP <- spdf2list(midiP[-c(22,23),])$poly
-
+midiP <- st_read(system.file("shapes/region.shp", package="GeoXp")[1])
 # an example of plot3dmap
-plot3dmap(immob.spdf, c("prix.vente", "prix.location", "variation.vente"),
- box = FALSE, carte = cont_midiP, identify = TRUE, cex.lab = 0.5,
- xlab = "prix.vente", ylab = "prix.location", zlab = "variation.vente")
-
+plot3dmap(immob.sf, c("prix.vente", "prix.location", "variation.vente"),
+  box = FALSE, carte = midiP, identify = "Nom", cex.lab = 0.5,
+  xlab = "prix.vente", ylab = "prix.location", zlab = "variation.vente")
 
 ######
 # data eire
-eire <- readOGR(system.file("shapes/eire.shp", package="spData")[1])
+eire <- st_read(system.file("shapes/eire.shp", package="spData")[1])
+
 # an example of use
 plot3dmap(eire, c("A", "RETSALE", "INCOME"), 
- xlab = "A", ylab = "RETSALE", zlab = "INCOME")
+  xlab = "A", ylab = "RETSALE", zlab = "INCOME")
 }
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

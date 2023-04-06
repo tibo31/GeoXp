@@ -6,26 +6,25 @@
 \description{
 The function \code{histobarmap()} draws a bar plot (vertical bar) of the given variable
 \code{names.var[1]}, a histogram of the given variable \code{names.var[2]} and a map with
-sites of coordinates \code{coordinates(sp.obj)}.}
+sites of coordinates \code{st_coordinates(sf.obj)}.}
 
 \usage{
-histobarmap(sp.obj, names.var, nbcol = 10, type = "count",
- names.arg = "", names.attr = names(sp.obj), criteria = NULL, carte = NULL, 
- identify = FALSE, cex.lab = 0.8, pch = 16, col = "lightblue3", 
+histobarmap(sf.obj, names.var, nbcol = 10, type = "count",
+ names.arg = "", criteria = NULL, carte = NULL, 
+ identify = NULL, cex.lab = 0.8, pch = 16, col = "lightblue3", 
  xlab = c("barplot", "histogram"), ylab = rep("count", 2),
  axes = FALSE, lablong = "", lablat = "")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{names.var}{a vector of 2 characters; first character corresponds to the name of a factor and second character corresponds to a numeric value}
   \item{nbcol}{number of cells for histogram (10 by default)}
   \item{type}{Character string indicating type of histogram/barplot to be drawn. "percent" and "count" give relative frequency and frequency histogram/barplot.}
   \item{names.arg}{a vector of level names (for factor)}
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of boolean of size the number os spatial units, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{a vector of symbol which must be equal to the number of group else all sites are printed in pch[1]}
   \item{col}{a vector of colors which must be equal to the number of group else all sites and all box are printed in col[1]}
@@ -63,21 +62,21 @@ Roger S.Bivand, Edzer J.Pebesma, Virgilio Gomez-Rubio (2009),  \emph{Applied Spa
 \examples{
 ###
 # Data Colombus
-require("rgdal")
-columbus <- readOGR(system.file("shapes/columbus.shp", package="spData")[1])
+require("sf")
+columbus <- st_read(system.file("shapes/columbus.shp", package="spData")[1])
 
 # an example of use
 histobarmap(columbus, c("CP", "HOVAL"), nbcol = 8, type = "percent", 
- names.arg = c("A", "B"), xlab = c("CP", "Hoval"), ylab = rep("percent", 2))
+  names.arg = c("A", "B"), xlab = c("CP", "Hoval"), ylab = rep("percent", 2))
 
 \dontrun{ 
 # data eire
-eire <- readOGR(system.file("shapes/eire.shp", package="spData")[1])
+eire <- st_read(system.file("shapes/eire.shp", package="spData")[1])
 
 # example of use
 histobarmap(eire, c("pale", "A"),names.arg = c("Ouside Pale", "Pale"),
- xlab = c("Appartenance to the region of Pale", "Average number of people with blood A"),
- col = colors()[101:102], identify = TRUE)
+  xlab = c("Appartenance to the region of Pale", "Average number of people with blood A"),
+  col = colors()[101:102], identify = "names")
 }
 }
 

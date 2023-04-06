@@ -9,16 +9,16 @@ projected into the same plane with the quality of representation in order to int
 component axes. The individuals scatterplot interacts with the map.
 }
 \usage{
-pcamap(sp.obj, names.var, direct = c(1, 2), weight = rep(1/nrow(sp.obj),
- length = nrow(sp.obj)), metric = diag(length(names.var)), 
- center = NULL, reduce = TRUE, qualproj = FALSE, names.attr = names(sp.obj), 
- criteria = NULL, carte = NULL, identify = FALSE, cex.lab = 0.8, pch = 16, 
- col = "lightblue3", xlab = paste(direct[1]), ylab = paste(direct[2]), 
- axes = FALSE, lablong = "", lablat = "")
+pcamap(sf.obj, names.var, direct = c(1, 2), weight = rep(1/nrow(sf.obj),
+  length = nrow(sf.obj)), metric = diag(length(names.var)), 
+  center = NULL, reduce = TRUE, qualproj = FALSE,  
+  criteria = NULL, carte = NULL, identify = NULL, cex.lab = 0.8, pch = 16, 
+  col = "lightblue3", xlab = paste(direct[1]), ylab = paste(direct[2]), 
+  axes = FALSE, lablong = "", lablat = "")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{names.var}{a vector of character; attribute names or column numbers in attribute table}
   \item{direct}{Two-dimension vector containing the numbers of principal axes to plot}
   \item{weight}{vector of size n of weight (by default : weight=t(1/n,...,1/n))}
@@ -26,10 +26,9 @@ pcamap(sp.obj, names.var, direct = c(1, 2), weight = rep(1/nrow(sp.obj),
   \item{center}{A vector of size p of the gravity center which by default is equal to \eqn{\bar X}{bar(X)}}
   \item{reduce}{if TRUE, reduced PCA}
   \item{qualproj}{if TRUE, print the quality of representation of individuals }
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of boolean  of size the number of Spatial unit, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{a vector of symbol which must be equal to the number of group else all sites are printed in pch[1]}
   \item{col}{a vector of colors which must be equal to the number of group else all sites and all bars are printed in col[1]}
@@ -72,35 +71,29 @@ Caussinus H., Fekri M., Hakam S., Ruiz-Gazen A. (2003) , \emph{A monitoring disp
 ###
 # Data Colombus
 require("robustbase")
-require("rgdal")
-columbus <- readOGR(system.file("shapes/columbus.shp", package="spData")[1])
-
+# data columbus
+require("sf")
+columbus <- st_read(system.file("shapes/columbus.shp", package="spData")[1])
 
 # a basic PCA on 7 variables
-pcamap(columbus, c(6:12), qualproj = TRUE, identify = TRUE)
+pcamap(columbus, c(6:12), qualproj = TRUE, identify = "POLYID")
 
 ###
 # data boston
-data(boston)
-
-# SpatialPoints object
-boston.sp <- SpatialPoints(cbind(boston.utm[, 1], boston.utm[, 2]))
-
-# SpatialPointsDataFrame object
-boston.spdf <- SpatialPointsDataFrame(boston.sp, boston.c)
+boston <- st_read(system.file("shapes/boston_tracts.shp", package="spData")[1])
 
 # a basic PCA on 7 variables
-pcamap(boston.spdf, c(7:8, 10, 12:15), identify = TRUE, cex.lab = 0.5)
+pcamap(boston, c(7:8, 10, 13:15), identify = "poltract", cex.lab = 0.5)
 
 # generalized PCA : user have to construct a new metric and a vector
 # of gravity center, by using for exampe covMcd
-cov.boston <- covMcd(boston.c[, c(7:8, 10, 12:15)], alpha = .75)
+cov.boston <- robustbase::covMcd(boston.c[, c(7:8, 10, 13:15)], alpha = .75)
 b.center <- cov.boston$center
 b.cov <- cov.boston$cov
 
 # example of use of pcamap
-pcamap(boston.spdf, c(7:8, 10, 12:15), metric = b.cov, center = b.center,
- identify = TRUE, cex.lab = 0.5)
+pcamap(boston, c(7:8, 10, 13:15), metric = b.cov, center = b.center,
+   identify = "poltract", cex.lab = 0.5)
 }
 
 \keyword{spatial}

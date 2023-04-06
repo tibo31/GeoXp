@@ -1,91 +1,78 @@
-polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
-                         names.attr = names(sp.obj), criteria = NULL, carte = NULL, identify = FALSE, cex.lab = 0.8,
-                         pch = 16, col = "lightblue3", xlab = "", ylab = "count", axes = FALSE, lablong = "", lablat = "") {
+polyboxplotmap <- function(sf.obj, names.var, varwidth = FALSE, names.arg = "",
+                         criteria = NULL, carte = NULL, identify = NULL, cex.lab = 0.8,
+                         pch = 16, col = "lightblue3", xlab = "", ylab = "count", axes = FALSE, 
+                         lablong = "", lablat = "") {
   
-  # Verification of the Spatial Object sp.obj
-  class.obj <- class(sp.obj)[1]
-  spdf <- (class.obj == "SpatialPolygonsDataFrame")
+  ###################################################
+  ########## COMMON to ALL FUNCTIONS in GeoXp
   
-  if (substr(class.obj, 1, 7) != "Spatial")
-    stop("sp.obj may be a Spatial object")
+  envir <- globalenv()
+  # Verification of the Spatial Object sf.obj
+  class.obj <- class(sf.obj)[1]
   
-  if (substr(class.obj, nchar(class.obj) - 8, nchar(class.obj)) != "DataFrame")
-    stop("sp.obj should contain a data.frame")
+  if(class.obj != "sf") 
+    stop("sf.obj may be a sf object")
   
-  if (!is.numeric(names.var) &
-      length(match(names.var, names(sp.obj))) != length(names.var))
-    stop("At least one component of names.var is not included in the data.frame of sp.obj")
+  # verification on attributes
+  listvar <- as.data.frame(st_drop_geometry(sf.obj))
+  listnomvar <- colnames(listvar)
   
-  if (length(names.attr) != length(names(sp.obj)))
-    stop("names.attr should be a vector of character with a length equal to the number of variable")
+  if (is.numeric(names.var)) {
+    if (all(names.var <= ncol(listvar))) 
+      names.var <- listnomvar[names.var]
+    else
+      stop("Dimension of names.var is not good")
+  }
+  
+  if(!(all(names.var %in% names(sf.obj))))
+    stop("At least one component of names.var is not included in the data.frame of sf.obj")
   
   # we propose to refind the same arguments used in first version of GeoXp
-  long <- coordinates(sp.obj)[, 1]
-  lat <- coordinates(sp.obj)[, 2]
-  
-  var1 <- sp.obj@data[, names.var[1]]
-  var2 <- sp.obj@data[, names.var[2]]
-  
-  listvar <- sp.obj@data
-  listnomvar <- names.attr
-  
-  # for colors in map and new grahics
-  if(length(col) == 1)
-    col2 <- "blue"
-  else 
-    col2 <- col
-  col3 <- "lightblue3"
+  if (st_geometry_type(sf.obj, by_geometry = F) %in% c("POINT"))
+    my_coords <- st_coordinates(st_geometry(sf.obj))
+  else
+    my_coords <- st_coordinates(st_point_on_surface(st_geometry(sf.obj)))
+  long <- my_coords[, 1]
+  lat <- my_coords[, 2]
   
   # for identifying the selected sites
-  if (identify)
-    label <- row.names(listvar)
+  if (!is.null(identify) && identify %in% colnames(sf.obj))
+    label <- sf.obj[[identify]]
   else
     label <- ""
   
-  # initialisation
   nointer <- FALSE
   nocart <- FALSE
   buble <- FALSE
   z <- NULL
   legmap <- NULL
   legends <- list(FALSE, FALSE, "", "")
-  labvar <- c(xlab, ylab)
   
-  if (names.arg[1] == "")
-    names.arg <- levels(as.factor(var1))
-  
-  var1 = as.matrix(var1)
-  var2 = as.matrix(var2)
-  lat = as.matrix(lat)
-  long = as.matrix(long)
-  obs <- vector(mode = "logical", length = length(long))
   graphChoice <- ""
   varChoice1 <- ""
   varChoice2 <- ""
   choix <- ""
+  method <- ""
   listgraph <- c("Histogram", "Barplot", "Scatterplot")
-  
-  if ((length(listvar) > 0) &&
-      (dim(as.matrix(listvar))[2] == 1))
-    listvar <- as.matrix(listvar)
   
   # Is there a Tk window already open ?
   if (interactive()) {
-    if (!exists("GeoXp.open", envir = globalenv())) {
-      assign("GeoXp.open", TRUE, envir = globalenv())
+    if (!exists("GeoXp.open", envir = envir) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = envir)
     } else {
-      if (get("GeoXp.open", envir = globalenv())) {
+      if (get("GeoXp.open", envir = envir)) {
         stop(
           "A GeoXp function is already open. 
           Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
       } else {
-        assign("GeoXp.open", TRUE, envir = globalenv())
+        assign("GeoXp.open", TRUE, envir = envir)
       }
     }
   }
   
   # Windows device
-  if (length(dev.list()) == 0 & options("device") == "RStudioGD")
+  if(length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
   # for graphic
   dev.new(noRStudioGD = FALSE)
@@ -95,6 +82,29 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
   num_carte <- dev.list()[length(dev.list())]
   # number of devices
   num_supp <- NA
+  
+  #####################################################
+  ##### Arguments proper to each function 
+  
+  obs <- vector(mode = "logical", length = length(long))
+  
+  var1 <- sf.obj[[names.var[1]]]
+  var2 <- sf.obj[[names.var[2]]]
+
+  if(!(is.integer(var2) || is.double(var2))) 
+    stop("Second element of names.var should be a numeric variable")
+  
+  # for colors in map and new grahics
+  if(length(col) == 1)
+    col2 <- "blue"
+  else 
+    col2 <- col
+  
+  col3 <- "lightblue3"
+  labvar <- c(xlab, ylab)
+  if (names.arg[1] == "")
+    names.arg <- levels(as.factor(var1))
+
   
   ####################################################
   # selection d'une partie du boxplot
@@ -128,7 +138,7 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
       title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
             cex.sub = 0.8, font.sub = 3, col.sub = "red")
       
-      carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte, 
+      carte(long = long, lat = lat, buble = buble, sf.obj = sf.obj, num = num_carte, 
             cbuble = z, criteria = criteria, nointer = nointer, obs = obs,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, carte = carte, 
             nocart = nocart, method = "Cluster", classe = var1, couleurs = col,
@@ -178,7 +188,7 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
     if (length(carte) != 0) {
       nocart <<- !nocart
       
-      carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte, 
+      carte(long = long, lat = lat, buble = buble, sf.obj = sf.obj, num = num_carte, 
             cbuble = z, criteria = criteria, nointer = nointer, obs = obs,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, carte = carte, 
             nocart = nocart, method = "Cluster", classe = var1, couleurs = col,
@@ -198,7 +208,7 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
     graphique(var1 = var2, var2 = var1, obs = obs, num = num_graph, graph = "Polyboxplot",
               labvar = labvar, symbol = pch, couleurs = col, labmod = names.arg, bin = varwidth)
     
-    carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte, 
+    carte(long = long, lat = lat, buble = buble, sf.obj = sf.obj, num = num_carte, 
           cbuble = z, criteria = criteria, nointer = nointer, obs = obs,
           lablong = lablong, lablat = lablat, label = label, symbol = pch, carte = carte, 
           nocart = nocart, method = "Cluster", classe = var1, couleurs = col,
@@ -216,7 +226,7 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
   
   quitfunc <- function() {
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     dev.off(num_graph)
     dev.off(num_carte)
     if (!is.na(num_supp))
@@ -245,7 +255,7 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
     }    
     
     pdf(map_save)
-    carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = dev.list()[length(dev.list())], 
+    carte(long = long, lat = lat, buble = buble, sf.obj = sf.obj, num = dev.list()[length(dev.list())], 
           cbuble = z, criteria = criteria, nointer = nointer, obs = obs,
           lablong = lablong, lablat = lablat, label = label, symbol = pch, carte = carte, 
           nocart = nocart, method = "Cluster", classe = var1, couleurs = col,
@@ -268,14 +278,14 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
     }
     
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     cat("Results have been saved in last.select object \n")
     cat("Map has been saved in", map_save, "\n")
     cat("Figure has been saved in", fig_save, "\n")
     if(!is.na(num_supp))
       cat("Supplemental figure has been saved in", fig_supp, "\n")
     
-    assign("last.select", which(obs), envir = globalenv())
+    assign("last.select", which(obs), envir = envir)
     
     dev.off(num_carte)
     dev.off(num_graph)
@@ -291,7 +301,7 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
     if (length(criteria) != 0) {
       nointer <<- !nointer
       
-      carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte, 
+      carte(long = long, lat = lat, buble = buble, sf.obj = sf.obj, num = num_carte, 
             cbuble = z, criteria = criteria, nointer = nointer, obs = obs,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, carte = carte, 
             nocart = nocart, method = "Cluster", classe = var1, couleurs = col,
@@ -314,7 +324,7 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
     z <<- res2$z
     legmap <<- res2$legmap
     
-    carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte, 
+    carte(long = long, lat = lat, buble = buble, sf.obj = sf.obj, num = num_carte, 
           cbuble = z, criteria = criteria, nointer = nointer, obs = obs,
           lablong = lablong, lablat = lablat, label = label, symbol = pch, carte = carte, 
           nocart = nocart, method = "Cluster", classe = var1, couleurs = col,
@@ -330,7 +340,7 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
   graphique(var1 = var2, var2 = var1, obs = obs, num = num_graph, graph = "Polyboxplot",
                 labvar = labvar, symbol = pch, couleurs = col, labmod = names.arg, bin = varwidth)
       
-  carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte, 
+  carte(long = long, lat = lat, buble = buble, sf.obj = sf.obj, num = num_carte, 
             cbuble = z, criteria = criteria, nointer = nointer, obs = obs,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, carte = carte, 
             nocart = nocart, method = "Cluster", classe = var1, couleurs = col,
@@ -348,9 +358,9 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
       title("ACTIVE DEVICE", cex.main = 0.8, font.main = 3, col.main = "red")
       dev.set(num_carte)
       loc <- locator(1)
-      loc$name <- names(sp.obj[,names.var[1]])
+      loc$name <- names(listvar[, names.var[1]])
       legends <<- list(legends[[1]], TRUE, legends[[4]], loc)
-      carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte, 
+      carte(long = long, lat = lat, buble = buble, sf.obj = sf.obj, num = num_carte, 
             cbuble = z, criteria = criteria, nointer = nointer, obs = obs,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, carte = carte, 
             nocart = nocart, method = "Cluster", classe = var1, couleurs = col,
@@ -360,7 +370,7 @@ polyboxplotmap <- function(sp.obj, names.var, varwidth = FALSE, names.arg = "",
     OnOK2 <- function() {
       legends <<- list(legends[[2]], FALSE, legends[[4]], "")
       tkdestroy(tt1)
-      carte(long = long, lat = lat, buble = buble, sp.obj = sp.obj, num = num_carte, 
+      carte(long = long, lat = lat, buble = buble, sf.obj = sf.obj, num = num_carte, 
             cbuble = z, criteria = criteria, nointer = nointer, obs = obs,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, carte = carte, 
             nocart = nocart, method = "Cluster", classe = var1, couleurs = col,

@@ -8,15 +8,15 @@ a neighbourhood structure given by a \code{nb} object and calculated by \code{nb
 }
 
 \usage{
-histnbmap(sp.obj, nb.obj, longlat = NULL, nbcol = 10,
- type = c("count", "percent", "density"), sup = FALSE, criteria = NULL, 
- carte = NULL, identify = FALSE, cex.lab = 0.8, pch = 16, 
- col = "lightblue3", xlab = "", ylab = "count", 
- axes = FALSE, lablong = "", lablat = "")
+histnbmap(sf.obj, nb.obj, longlat = NULL, nbcol = 10,
+  type = c("count", "percent", "density"), sup = FALSE, criteria = NULL, 
+  carte = NULL, identify = NULL, cex.lab = 0.8, pch = 16, 
+  col = "lightblue3", xlab = "", ylab = "count", 
+  axes = FALSE, lablong = "", lablat = "")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{nb.obj}{object of class nb}
   \item{longlat}{TRUE if point coordinates are longitude-latitude decimal degrees, in which case distances are measured in kilometers;
   if coords is a SpatialPoints object, the value is taken from the object itself}
@@ -25,7 +25,7 @@ histnbmap(sp.obj, nb.obj, longlat = NULL, nbcol = 10,
   \item{sup}{if TRUE, it keeps only the distance of the neighbor the farest }
   \item{criteria}{a vector of boolean of size the number of Spatial units, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{16 by default, symbol for selected points}
   \item{col}{"lightblue3" by default, color of bars on the barplot}
@@ -59,37 +59,36 @@ Roger S.Bivand, Edzer J.Pebesma, Virgilio Gomez-Rubio (2009),  \emph{Applied Spa
 \examples{
 ##
 # data columbus
-require("rgdal")
-columbus <- readOGR(system.file("shapes/columbus.shp", package="spData")[1])
+require("sf")
+columbus <- sf::st_read(system.file("shapes/columbus.shp", package="spData")[1])
 # col.gal.nb is a spatial weight matrix included in spdep package...
-col.gal.nb <- read.gal(system.file("weights/columbus.gal", package="spData")[1])
+library("spdep")
+col.gal.nb <- spdep::read.gal(system.file("weights/columbus.gal", package="spData")[1])
 
 # a simple use of histnbmap
 histnbmap(columbus, col.gal.nb, criteria = (columbus$CP == 1),
  xlab = "distance of the neighbor the farest")
 
 \dontrun{ 
-# data meuse
-data(meuse)
-
-# meuse is a data.frame object. We have to create
-# a Spatial object, by using first the longitude and latitude
-# to create Spatial Points object ...
-meuse.sp <- SpatialPoints(cbind(meuse$x, meuse$y))
-# ... and then by integrating other variables to create SpatialPointsDataFrame
-meuse.spdf <- SpatialPointsDataFrame(meuse.sp, meuse)
-
-# meuse.riv is used for contour plot
-data(meuse.riv)
+require(sf)
+if (require(sp, quietly = TRUE)) {
+ data(meuse, package = "sp")
+ meuse_sf <- st_as_sf(meuse, coords = c("x", "y"), crs = 28992, agr = "constant")
+ data(meuse.riv)
+ meuse.sr <- st_as_sf(SpatialPolygons(list(Polygons(list(Polygon(meuse.riv)), "meuse.riv"))),
+     crs = 28992)
+}
 
 # creation of a spatial weight matrix (class nb) based
 # on the Delaunay triangulation
-meuse.nb <- tri2nb(coordinates(meuse.sp))
+if (require(spdep, quietly = TRUE)) {
+  meuse.nb <- tri2nb(st_coordinates(meuse_sf))
+}
 
 # a example with some optionswhich shows the limit of
 # this kind of spatial weight matrix
-histnbmap(meuse.spdf, meuse.nb, sup = TRUE, nbcol = 7,
- carte = meuse.riv[c(21:65, 110:153), ])
+histnbmap(meuse_sf, meuse.nb, nbcol = 7,
+  carte = meuse.sr)
 }
 }
 

@@ -1,83 +1,65 @@
-mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.attr = names(sp.obj), 
-                           criteria = NULL, carte = NULL, identify = FALSE, cex.lab = 0.8, pch = 16, col = "lightblue3", 
+mvariocloudmap <- function(sf.obj, nb.obj, names.var, quantiles = TRUE,  
+                           criteria = NULL, carte = NULL, identify = NULL, cex.lab = 0.8, pch = 16, col = "lightblue3", 
                            xlab = "Pairwise spatial distances", ylab = "Pairwise Mahalanobis distances", axes = FALSE,
                            lablong = "", lablat = "") {
   
-  # Verification of the Spatial Object sp.obj
-  class.obj <- class(sp.obj)[1]
+  ###################################################
+  ########## COMMON to ALL FUNCTIONS in GeoXp
   
-  if (substr(class.obj, 1, 7) != "Spatial")
-    stop("sp.obj may be a Spatial object")
+  envir <- globalenv()
+  # Verification of the Spatial Object sf.obj
+  class.obj <- class(sf.obj)[1]
   
-  if (substr(class.obj, nchar(class.obj) - 8, nchar(class.obj)) != "DataFrame")
-    stop("sp.obj should contain a data.frame")
+  if(class.obj != "sf") 
+    stop("sf.obj may be a sf object")
   
-  if (!is.numeric(names.var) &
-      length(match(names.var, names(sp.obj))) != length(names.var))
-    stop("At least one component of names.var is not included in the data.frame of sp.obj")
-  
-  if (length(names.attr) != length(names(sp.obj)))
-    stop("names.attr should be a vector of character with a length equal to the number of variable")
-  
-  # Is there a Tk window already open ?
-  if (interactive()) {
-    if (!exists("GeoXp.open", envir = globalenv())) {
-      assign("GeoXp.open", TRUE, envir = globalenv())
-    } else {
-      if (get("GeoXp.open", envir = globalenv())) {
-        stop(
-          "A GeoXp function is already open. Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics"
-        )
-      } else
-        assign("GeoXp.open", TRUE, envir = globalenv())
-    }
-  }
+  # verification on attributes
+  listvar <- as.data.frame(st_drop_geometry(sf.obj))
+  listnomvar <- colnames(listvar)
   
   # we propose to refind the same arguments used in first version of GeoXp
-  long <- coordinates(sp.obj)[, 1]
-  lat <- coordinates(sp.obj)[, 2]
-  
-  dataset <- sp.obj@data[, names.var]
-  
-  listvar <- sp.obj@data
-  listnomvar <- names.attr
-  
-  # Code which was necessary in the previous version
-  if (is.null(carte) &
-      class.obj == "SpatialPolygonsDataFrame")
-    carte <- spdf2list(sp.obj)$poly
+  if (st_geometry_type(sf.obj, by_geometry = F) %in% c("POINT"))
+    my_coords <- st_coordinates(st_geometry(sf.obj))
+  else
+    my_coords <- st_coordinates(st_point_on_surface(st_geometry(sf.obj)))
+  long <- my_coords[, 1]
+  lat <- my_coords[, 2]
   
   # for identifying the selected sites
-  if(identify)
-    label <- row.names(listvar)
+  if (!is.null(identify) && identify %in% colnames(sf.obj))
+    label <- sf.obj[[identify]]
   else
     label <- ""
   
-  # Spatial weight matrix
-  W <- nb2mat(nb.obj)
-  
-  # initialisation
-  xy <- cbind(long, lat)
   nointer <- FALSE
   nocart <- FALSE
   buble <- FALSE
-  legends <- list(FALSE, FALSE, "", "")
   z <- NULL
   legmap <- NULL
-  inout <- NULL
+  legends <- list(FALSE, FALSE, "", "")
   labvar <- c(xlab, ylab)
-  obs <- matrix(FALSE, nrow = length(long), ncol = length(long))
-  obs2 <- matrix(FALSE, nrow = length(long), ncol = length(long))
-  graf <- "Neighbourplot1"
-  names.slide <- c("Quantile smooth spline parameter")
   
-  # Transformation d'un data.frame en matrix
-  if ((length(listvar) > 0) &&
-      (dim(as.matrix(listvar))[2] == 1))
-    listvar <- as.matrix(listvar)
-  if ((length(dataset) > 0) &&
-      (dim(as.matrix(dataset))[2] == 1))
-    dataset <- as.matrix(dataset)
+  graphChoice <- ""
+  varChoice1 <- ""
+  varChoice2 <- ""
+  choix <- ""
+  listgraph <- c("Histogram", "Barplot", "Scatterplot")
+  
+  # Is there a Tk window already open ?
+  if (interactive()) {
+    if (!exists("GeoXp.open", envir = envir) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = envir)
+    } else {
+      if (get("GeoXp.open", envir = envir)) {
+        stop(
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
+      } else {
+        assign("GeoXp.open", TRUE, envir = envir)
+      }
+    }
+  }
   
   # Windows device
   if(length(dev.list()) == 0 & options("device") == "RStudioGD")
@@ -88,7 +70,28 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
   # for map
   dev.new(noRStudioGD = FALSE)
   num_carte <- dev.list()[length(dev.list())]
-
+  # number of devices
+  num_supp <- NA
+  
+  #####################################################
+  ##### Arguments proper to each function 
+  if (is.numeric(names.var)) {
+    if (all(names.var <= ncol(listvar))) 
+      names.var <- listnomvar[names.var]
+    else
+      stop("Dimension of names.var is not good")
+  }
+  
+  if(!(all(names.var %in% names(sf.obj))))
+    stop("names.var is not included in the sf object")
+  
+  dataset <- listvar[, names.var]
+  
+  obs <- matrix(FALSE, nrow = length(long), ncol = length(long))
+  obs2 <- matrix(FALSE, nrow = length(long), ncol = length(long))
+  graf <- "Neighbourplot1"
+  names.slide <- c("Quantile regression parameter")
+  
   # calcul des matrices theta et absvar
   n <- nrow(dataset)
   p <- ncol(dataset)
@@ -97,8 +100,8 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
   
   idx <- matrix(1:n, n, n)
   se <- as.vector(idx[lower.tri(idx)])
-  dij <- sqrt((rep(xy[-n, 1], seq(n - 1, 1)) - xy[se, 1]) ^ 2 + 
-                (rep(xy[-n, 2], seq(n - 1, 1)) - xy[se, 2]) ^ 2)
+  dij <- sqrt((rep(my_coords[-n, 1], seq(n - 1, 1)) - my_coords[se, 1]) ^ 2 + 
+                (rep(my_coords[-n, 2], seq(n - 1, 1)) - my_coords[se, 2]) ^ 2)
   hlp <- as.matrix(dataset[rep(1:(n - 1), seq((n - 1), 1)), ] - dataset[se, ])
   MDij <- sqrt(rowSums((hlp %*% cinv) * hlp))
   
@@ -126,10 +129,9 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
   if (alfan < pcrit)
     alfan <- 0
   cn <- ifelse(alfan > 0, max(d2ord[n - ceiling(n * alfan)], delta), Inf)
-  
   alphab <- ifelse(cn != Inf, sqrt(c(cn, qchisq(c(0.75, 0.5, 0.25), ncol(dataset)))),
                    sqrt(qchisq(c(0.975, 0.75, 0.5, 0.25), ncol(dataset))))
-  
+
   chi2.quant <- rep(0, n)
   lalpha <- length(alphab)
   for (j in 1:lalpha) {
@@ -149,7 +151,8 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
   temp_data <- data.frame(
     var1 = sort(theta),
     var2 = absvar[order(theta)])
-  alpha1 <- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
+  
+  alpha1 <- quantreg::rq(var2 ~ var1, data = temp_data, tau = alpha)
   
   ####################################################
   # selection d'un point sur la carte
@@ -173,7 +176,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
       loc <- locator(1)
       if (is.null(loc)) {
         quit <- TRUE
-        carte(long = long, lat = lat, obs = obs, num = num_carte, buble = buble, criteria = criteria,
+        carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, buble = buble, criteria = criteria,
               nointer = nointer, cbuble = z, carte = carte, nocart = nocart, lablong = lablong,
               lablat = lablat, label = label, cex.lab = cex.lab, symbol = pch, method = "pairwise",
               axis = axes, legmap = legmap, legends = legends)       
@@ -185,7 +188,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
       obs <<- (diag(n)*obs2 > 0)
       
       # graphiques
-      carte(long = long, lat = lat, obs = obs, num = num_carte, buble = buble, criteria = criteria,
+      carte(long = long, lat = lat, obs = obs,  sf.obj = sf.obj, num = num_carte, buble = buble, criteria = criteria,
             nointer = nointer, cbuble = z, carte = carte, nocart = nocart, lablong = lablong,
             lablat = lablat, label = label, cex.lab = cex.lab, symbol = pch, method = "pairwise",
             axis = axes, legmap = legmap, legends = legends)    
@@ -205,7 +208,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
   ####################################################
   
   polyfunca <- function() {
-    if (graf=="pairwise") SGfunc()
+    if (graf == "pairwise") SGfunc()
     graf <<- "Neighbourplot1"
     
     polyX <- NULL
@@ -240,7 +243,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
       obs <<- (diag(n)*obs2 > 0)
       
       # graphiques
-      carte(long = long, lat = lat, obs = obs, num = num_carte, buble = buble, criteria = criteria,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, buble = buble, criteria = criteria,
             nointer = nointer, cbuble = z, carte = carte, nocart = nocart, lablong = lablong,
             lablat = lablat, label = label, cex.lab = cex.lab, symbol = pch, method = "pairwise",
             axis = axes, legmap = legmap, legends = legends)    
@@ -290,7 +293,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
       title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
             cex.sub = 0.8, font.sub = 3, col.sub = "red")
       
-      carte(long = long, lat = lat, obs = obs, num = num_carte, buble = buble, criteria = criteria,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, buble = buble, criteria = criteria,
             nointer = nointer, cbuble = z, carte = carte, nocart = nocart, lablong = lablong,
             lablat = lablat, label = label, cex.lab = cex.lab, symbol = pch, method = "pairwise",
             axis = axes, legmap = legmap, legends = legends)    
@@ -335,8 +338,14 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
     if (length(polyX) > 0) {
       lines(polyX, polyY)
       for (i in 1:length(long)) {
-        def <- inout(cbind(theta[, i], absvar[, i]), 
-                     cbind(polyX, polyY), bound = TRUE)       
+        
+        my_points <- st_as_sf(data.frame(x = as.numeric(theta[, i]), 
+                                         y = as.numeric(absvar[, i])), 
+                              coords = c("x", "y"))
+        polyg <- cbind(unlist(polyX), unlist(polyY))
+        pol <- st_sfc(st_polygon(list(polyg)))
+        def <- as.vector(st_intersects(my_points, pol, sparse = FALSE))
+        
         obs[def, i] <<- !obs[def, i]    
       }
       
@@ -345,7 +354,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
                 graph = "pairwise", labvar = labvar, couleurs = col, symbol = pch, 
                 quantiles = quantiles, alpha1 = alpha1)
       
-      carte(long = long, lat = lat, obs = obs, num = num_carte, buble = buble, criteria = criteria,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, buble = buble, criteria = criteria,
             nointer = nointer, cbuble = z, carte = carte, nocart = nocart, lablong = lablong,
             lablat = lablat, label = label, cex.lab = cex.lab, symbol = pch, method = "pairwise",
             axis = axes, legmap = legmap, legends = legends)    
@@ -360,7 +369,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
     if (length(carte) != 0) {
       nocart <<- !nocart
       
-      carte(long = long, lat = lat, obs = obs, num = num_carte, buble = buble, criteria = criteria,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, buble = buble, criteria = criteria,
             nointer = nointer, cbuble = z, carte = carte, nocart = nocart, lablong = lablong,
             lablat = lablat, label = label, cex.lab = cex.lab, symbol = pch, method = "pairwise",
             axis = axes, legmap = legmap, legends = legends)    
@@ -377,7 +386,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
     obs <<- matrix(FALSE, nrow = length(long), ncol = length(long))
     obs2 <<- matrix(FALSE, nrow = length(long), ncol = length(long))
     
-    carte(long = long, lat = lat, obs = obs, num = num_carte, buble = buble, criteria = criteria,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, buble = buble, criteria = criteria,
           nointer = nointer, cbuble = z, carte = carte, nocart = nocart, lablong = lablong,
           lablat = lablat, label = label, cex.lab = cex.lab, symbol = pch, method = "pairwise",
           axis = axes, legmap = legmap, legends = legends)    
@@ -393,7 +402,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
   
   quitfunc <- function() {
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     dev.off(num_graph)
     dev.off(num_carte)
   }
@@ -420,19 +429,19 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
     }    
     
     pdf(map_save)
-    carte(long = long, lat = lat, obs = obs, num = dev.list()[length(dev.list())], buble = buble, criteria = criteria,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = dev.list()[length(dev.list())], buble = buble, criteria = criteria,
           nointer = nointer, cbuble = z, carte = carte, nocart = nocart, lablong = lablong,
           lablat = lablat, label = label, cex.lab = cex.lab, symbol = pch, method = "pairwise",
           axis = axes, legmap = legmap, legends = legends)    
     dev.off()
 
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     cat("Results have been saved in last.select object \n")
     cat("Map has been saved in", map_save, "\n")
     cat("Figure has been saved in", fig_save, "\n")
     
-    assign("last.select", which(obs), envir = globalenv())
+    assign("last.select", which(obs), envir = envir)
     
     dev.off(num_carte)
     dev.off(num_graph)
@@ -447,7 +456,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
     if (length(criteria) != 0) {
       nointer <<- !nointer
       
-      carte(long = long, lat = lat, obs = obs, num = num_carte, buble = buble, criteria = criteria,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, buble = buble, criteria = criteria,
             nointer = nointer, cbuble = z, carte = carte, nocart = nocart, lablong = lablong,
             lablat = lablat, label = label, cex.lab = cex.lab, symbol = pch, method = "pairwise",
             axis = axes, legmap = legmap, legends = legends)    
@@ -460,9 +469,9 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
   ####################################################
   # Bubble
   ####################################################
-  
+
   fbubble <- function() {
-    res2 <- choix.bubble(buble, cbind(chi2.quant,listvar), c("chi2.quant",listnomvar), legends, num_graph, num_carte)
+    res2 <- choix.bubble(buble, cbind(chi2.quant, listvar), c("chi2.quant",listnomvar), legends, num_graph, num_carte)
     
     buble <<- res2$buble
     legends <<- res2$legends
@@ -478,7 +487,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
       }
     }
   
-    carte(long = long, lat = lat, obs = obs, num = num_carte, buble = buble, criteria = criteria,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, buble = buble, criteria = criteria,
           nointer = nointer, cbuble = z, carte = carte, nocart = nocart, lablong = lablong,
           lablat = lablat, label = label, cex.lab = cex.lab, symbol = pch, method = "pairwise",
           axis = axes, legmap = legmap, legends = legends)    
@@ -496,7 +505,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
       var1 = sort(theta),
       var2 = absvar[order(theta)])
     
-    alpha1 <<- qgam(var2 ~ s(var1, k = 20, bs = "ad"), data = temp_data, qu = alpha)
+    alpha1 <<- quantreg::rq(var2 ~ var1, data = temp_data, tau = alpha)
     
     graphique(var1 = theta, var2 = absvar, obs = obs2, num = num_graph, 
               graph = "pairwise", labvar = labvar, couleurs = col, symbol = pch, 
@@ -507,7 +516,7 @@ mvariocloudmap <- function(sp.obj, nb.obj, names.var, quantiles = TRUE, names.at
   # Representation graphique
   ####################################################
   
-  carte(long = long, lat = lat, obs = obs, num = num_carte, lablong = lablong, 
+  carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, lablong = lablong, 
         lablat = lablat, label = label, cex.lab = cex.lab, 
         symbol = pch, carte = carte, method = "pairwise",
         axis = axes, legends = legends)

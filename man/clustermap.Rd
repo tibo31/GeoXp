@@ -9,28 +9,27 @@ Classification methods come from \code{hclust()} (hierarchical cluster analysis)
 }
 
 \usage{
-clustermap(sp.obj, names.var, clustnum, method = c("kmeans", "hclust"), 
- type = NULL, centers = NULL, scale = FALSE, names.arg = "", 
- names.attr = names(sp.obj), criteria = NULL, carte = NULL, identify = FALSE, 
- cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "Cluster", 
- ylab = "Number", axes = FALSE, lablong = "", lablat = "")
+clustermap(sf.obj, names.var, clustnum, method = c("kmeans", "hclust"), 
+  type = NULL, centers = NULL, scale = FALSE, names.arg = "", 
+  criteria = NULL, carte = NULL, identify = NULL, 
+  cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "Cluster", 
+  ylab = "Number", axes = FALSE, lablong = "", lablat = "")
 }
 
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{names.var}{a vector of character; attribute names or column numbers in attribute table}
   \item{clustnum}{integer, number of clusters}
-  \item{method}{two methods : `kmeans' by default or `hclust'}
-  \item{type}{If method=`hclust', type=`complete' by default  (the possibilities are given in help(hclust)
-  as `ward', `single', etc). If method=`kmeans', type="Hartigan-Wong" by default (the possibilities are given in help(kmeans)
-  as `Forgy', etc)}
+  \item{method}{two methods : "kmeans"" by default or "hclust"}
+  \item{type}{If method="hclust", type="complete" by default  (the possibilities are given in help(hclust)
+  as "ward", "single", etc). If method="kmeans", type="Hartigan-Wong" by default (the possibilities are given in help(kmeans)
+  as "Forgy", etc)}
   \item{centers}{If method='kmeans', user can give a matrix with initial cluster centers.}
   \item{scale}{If scale=TRUE, the dataset is reducted.}
   \item{names.arg}{a vector of character, names of cluster}
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of boolean of size the number of spatial units, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{a vector of symbol which must be equal to the number of group else all sites are printed in pch[1]}
   \item{col}{a vector of colors which must be equal to the number of group else all sites and all bars are printed in col[1]}
@@ -73,18 +72,18 @@ then use the function \code{barmap} to visualize the calculated clusters. }
 \examples{
 #####
 # data columbus
-require("rgdal")
-columbus <- readOGR(system.file("shapes/columbus.shp", package="spData")[1])
+require("sf")
+columbus <- st_read(system.file("shapes/columbus.shp", package="spData")[1])
 
 # a basic example using the kmeans method
 clustermap(columbus, c("HOVAL", "INC", "CRIME", "OPEN", "PLUMB", "DISCBD"), 3, 
- criteria = (columbus@data$CP == 1), identify = TRUE, cex.lab = 0.7)
+  criteria = (columbus@data$CP == 1), identify = TRUE, cex.lab = 0.7)
 
 \dontrun{ 
 # example using the hclust method
 clustermap(columbus, c(7:12), 3, method = "hclust", 
- criteria = (columbus@data$CP == 1), col = colors()[20:22], identify = TRUE, 
- cex.lab = 0.7, names.arg = c("Group 1", "Group 2", "Group 3"), xlab = "Cluster")
+  criteria = (columbus$CP == 1), col = colors()[20:22], identify = "POLYID", 
+  cex.lab = 0.7, names.arg = c("Group 1", "Group 2", "Group 3"), xlab = "Cluster")
 }
 }
 

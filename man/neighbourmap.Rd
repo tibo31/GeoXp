@@ -9,21 +9,20 @@ links this scatterplot with a map.
 }
 
 \usage{
-neighbourmap(sp.obj, name.var, nb.obj, lin.reg = TRUE, 
- names.attr = names(sp.obj), criteria = NULL, carte = NULL, identify = FALSE, 
- cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "", ylab = "", 
- axes = FALSE, lablong = "", lablat = "")
+neighbourmap(sf.obj, name.var, nb.obj, lin.reg = TRUE, 
+  criteria = NULL, carte = NULL, identify = NULL, 
+  cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "", ylab = "", 
+  axes = FALSE, lablong = "", lablat = "")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{name.var}{a character; attribute name or column number in attribute table}
   \item{nb.obj}{object of class nb}
   \item{lin.reg}{If TRUE, drawing the linear curve y=x}
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of boolean of size the number of spatial units, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{16 by default, symbol for selected points}
   \item{col}{"lightblue3" by default, color of bars on the histogram}
@@ -58,39 +57,33 @@ Roger S.Bivand, Edzer J.Pebesma, Virgilio Gomez-Rubio (2009),  \emph{Applied Spa
 \examples{
 ###
 # columbus
-require("rgdal")
-columbus <- readOGR(system.file("shapes/columbus.shp", package="spData")[1])
+require("sf")
+columbus <- sf::st_read(system.file("shapes/columbus.shp", package="spData")[1])
+col.gal.nb <- spdep::read.gal(system.file("weights/columbus.gal", package="spData")[1])
 
 # example of use of neighbourmap
 neighbourmap(columbus, "CRIME", col.gal.nb,
- criteria = (columbus@data$CRIME > mean(columbus@data$CRIME)))
+  criteria = (columbus$CRIME > mean(columbus$CRIME)))
 
 ###
 # data immob
-data(immob)
-
-# change names of individuals
-row.names(immob) <- immob$Nom
+# data on price indices of real estate in France
+data(immob, package = "GeoXp")
 
 # immob is a data.frame object. We have to create
 # a Spatial object, by using first the longitude and latitude
-# to create Spatial Points object ...
-immob.sp <- SpatialPoints(cbind(immob$longitude,immob$latitude))
-# ... and then by integrating other variables to create SpatialPointsDataFrame
-immob.spdf <- SpatialPointsDataFrame(immob.sp, immob)
-# For more details, see vignette('sp', package="sp")
-
+require(sf)
+immob.sf <- st_as_sf(immob, coords = c("longitude", "latitude"))
 # optional : we add some contours that don't correspond to the spatial unit
 # but are nice for mapping
-midiP <- readOGR(system.file("shapes/region.shp", package="GeoXp")[1])
-cont_midiP <- spdf2list(midiP[-c(22, 23), ])$poly
+midiP <- st_read(system.file("shapes/region.shp", package="GeoXp")[1])
 
 # A spatial weight matrix based on triangulation Delaunay
-W.nb <- tri2nb(cbind(immob$longitude, immob$latitude))
+W.nb <- spdep::tri2nb(cbind(immob$longitude, immob$latitude))
 
 # example of use of neighbourmap
-neighbourmap(immob.spdf, "prix.vente", W.nb, identify = TRUE, cex.lab = 0.5,
- carte = cont_midiP)
+neighbourmap(immob.sf, "prix.vente", W.nb, identify = "Nom", cex.lab = 0.5,
+   carte = midiP)
 }
 
 \seealso{\code{\link{moranplotmap}},\code{\link{makeneighborsw}},\code{\link{normw}},\code{\link{nonormmoran}} }

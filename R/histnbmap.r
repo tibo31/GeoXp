@@ -1,75 +1,61 @@
-histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count", "percent", "density"),
-                     sup = FALSE, criteria = NULL, carte = NULL, identify = FALSE, cex.lab = 0.8, pch = 16,
+histnbmap<- function(sf.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count", "percent", "density"),
+                     sup = FALSE, criteria = NULL, carte = NULL, identify = NULL, cex.lab = 0.8, pch = 16,
                      col = "lightblue3", xlab = "", ylab = "count", axes = FALSE, lablong = "", lablat = "") {
-  # Verification of the Spatial Object sp.obj
-  class.obj <- class(sp.obj)[1]
+ 
+  ###################################################
+  ########## COMMON to ALL FUNCTIONS in GeoXp
   
-  if (substr(class.obj, 1, 7) != "Spatial")
-    stop("sp.obj may be a Spatial object")
+  envir <- globalenv()
+  # Verification of the Spatial Object sf.obj
+  class.obj <- class(sf.obj)[1]
   
-  spdf <- (class.obj == "SpatialPolygonsDataFrame")
+  if(class.obj != "sf") 
+    stop("sf.obj may be a sf object")
   
   # we propose to refind the same arguments used in first version of GeoXp
-  coords <- coordinates(sp.obj)
+  if (st_geometry_type(sf.obj, by_geometry = F) %in% c("POINT"))
+    my_coords <- st_coordinates(st_geometry(sf.obj))
+  else
+    my_coords <- st_coordinates(st_point_on_surface(st_geometry(sf.obj)))
+  long <- my_coords[, 1]
+  lat <- my_coords[, 2]
   
-  if (substr(class.obj, nchar(class.obj) - 8, nchar(class.obj)) == "DataFrame") {
-    listvar <- sp.obj@data
-    listnomvar <- names(sp.obj@data)
-  } else {
-    listvar <- NULL
-    listnomvar <- NULL
-  }
+  listvar <- as.data.frame(st_drop_geometry(sf.obj))
+  listnomvar <- colnames(listvar)
   
-  # Code which was necessary in the previous version
-  object <- nb.obj
-
-  if(identify)
-    label <- row.names(listvar)
+  # for identifying the selected sites
+  if (!is.null(identify) && identify %in% colnames(sf.obj))
+    label <- sf.obj[[identify]]
   else
     label <- ""
   
-  # initialisation
   nointer <- FALSE
   nocart <- FALSE
   buble <- FALSE
-  labvar <- c(xlab, ylab)
   z <- NULL
   legmap <- NULL
   legends <- list(FALSE, FALSE, "", "")
+  labvar <- c(xlab, ylab)
   
-  # Transformation data.frame en matrix
-  if ((length(listvar) > 0) &&
-      (dim(as.matrix(listvar))[2] == 1))
-    listvar <- as.matrix(listvar)
-  
-  #  objets spdep
-  nb <- object
-  W <- nb2mat(nb, zero.policy = TRUE)
-  if (!inherits(nb, "nb"))
-    stop("Not a neighbours list")
-  c.nb <- card(nb)
-  n.nb <- length(nb)
-  regids <- attr(nb, "region.id")
-  if (is.null(regids))
-    regids <- as.character(1:n.nb)
-  
-  long <- coords[, 1]
-  lat <- coords[, 2]
-  
-  obs <- matrix(FALSE, nrow = n.nb, ncol = n.nb)
-  graf <- "Neighbourplot1"
+  graphChoice <- ""
+  varChoice1 <- ""
+  varChoice2 <- ""
+  choix <- ""
+  method <- ""
+  listgraph <- c("Histogram", "Barplot", "Scatterplot")
   
   # Is there a Tk window already open ?
   if (interactive()) {
-    if (!exists("GeoXp.open", envir = globalenv())) {
-      assign("GeoXp.open", TRUE, envir = globalenv())
+    if (!exists("GeoXp.open", envir = envir) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = envir)
     } else {
-      if (get("GeoXp.open", envir = globalenv())) {
+      if (get("GeoXp.open", envir = envir)) {
         stop(
           "A GeoXp function is already open. 
           Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
       } else {
-        assign("GeoXp.open", TRUE, envir = globalenv())
+        assign("GeoXp.open", TRUE, envir = envir)
       }
     }
   }
@@ -86,64 +72,33 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
   # number of devices
   num_supp <- NA
   
+  #####################################################
+  ##### Arguments proper to each function 
+  #  objets spdep
+  nb <- nb.obj
+  W <- nb2mat(nb, zero.policy = TRUE)
+  if (!inherits(nb, "nb"))
+    stop("Not a neighbours list")
+  c.nb <- card(nb)
+  n.nb <- length(nb)
+  regids <- attr(nb, "region.id")
+  if (is.null(regids))
+    regids <- as.character(1:n.nb)
+  
+  obs <- matrix(FALSE, nrow = n.nb, ncol = n.nb)
+  graf <- "Neighbourplot1"
   
   # this code comes from a spdep function 
-  if (!is.null(coords)) {
-    if (inherits(coords, "SpatialPoints")) {
-      if ((is.null(longlat) || !is.logical(longlat)) &&
-          !is.na(is.projected(coords)) && !is.projected(coords)) 
-        longlat <- TRUE
-      else 
-        longlat <- FALSE
-      coords <- coordinates(coords)
-    } else if (is.null(longlat) || !is.logical(longlat))
-      longlat <- FALSE
-    if (!is.matrix(coords))
-      stop("Data not in matrix form")
-    if (any(is.na(coords)))
-      stop("Data include NAs")
-    np <- nrow(coords)
-    if (np != n.nb)
-      stop("Number of coords not equal to number of regions")
-    dimension <- ncol(coords)
-    # dlist <- .Call("nbdists", nb, as.matrix(coords), as.integer(np),
-    #    as.integer(dimension), as.integer(longlat), PACKAGE = "spdep")[[1]]
-    dlist <- nbdists(nb=nb, coords=coords, longlat=longlat)
-  }
-  
+ 
   # this code also ....
   if (sup == TRUE) {
     for (i in 1:n.nb) 
       nb[[i]] <- as.integer(nb[[i]][which(dlist[[i]] == max(dlist[[i]]))])
-
-  
-    if (!is.null(coords)) {
-      if (inherits(coords, "SpatialPoints")) {
-        if ((is.null(longlat) || !is.logical(longlat)) &&
-            !is.na(is.projected(coords)) && !is.projected(coords)) 
-          longlat <- TRUE
-        else 
-          longlat <- FALSE
-        coords <- coordinates(coords)
-      } else if (is.null(longlat) || !is.logical(longlat))
-        longlat <- FALSE
-      if (!is.matrix(coords))
-        stop("Data not in matrix form")
-      if (any(is.na(coords)))
-        stop("Data include NAs")
-      np <- nrow(coords)
-      if (np != n.nb)
-        stop("Number of coords not equal to number of regions")
-      dimension <- ncol(coords)
-      # dlist <- .Call("nbdists", nb, as.matrix(coords), as.integer(np),
-      #     as.integer(dimension), as.integer(longlat), PACKAGE = "spdep")[[1]]
-      dlist <- nbdists(nb=nb, coords=coords, longlat=longlat)
-    }   
-    
     W <- nb2mat(nb)   
-  }                                
+  }
   
-  
+  dlist <- spdep::nbdists(nb=nb, coords = my_coords)
+   
   ####################################################
   # selection d'un point sur la carte
   ####################################################
@@ -162,13 +117,15 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
     
     while (!quit) {
       dev.set(num_carte)
-      if(spdf & length(long) > 75 & !buble) 
-      points(long, lat, pch = 16, col = "royalblue")
+      
+      if (nrow(sf.obj) > 100 & st_geometry_type(sf.obj, by_geometry = F) == "POLYGON" & !buble) {
+        points(long, lat, pch = 16, col = "royalblue")
+      }
       
       loc <- locator(1)
       if (is.null(loc)) {
         quit <- TRUE
-        carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
+        carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
               lablong = lablong, lablat = lablat, label = label, symbol = pch,
               method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
               legmap = legmap, legends = legends, buble = buble, criteria = criteria,
@@ -176,24 +133,22 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
         next
       }
       
-      if(!spdf | length(long) > 75) { 
-        obs <<- selectmap(var1 = long, var2 = lat, obs = obs, Xpoly = loc[1], 
-                          Ypoly = loc[2], method = "point")
-        } else {
-          if (gContains(sp.obj, SpatialPoints(cbind(loc$x, loc$y),
-                                              proj4string = CRS(proj4string(sp.obj))))) {
-            for (i in 1:nrow(sp.obj)) {
-              if (gContains(sp.obj[i, ], SpatialPoints(cbind(loc$x, loc$y),
-                                                       proj4string = CRS(proj4string(sp.obj))))) {
-                obs[i, ] <<- !obs[i, ] 
-                break
-              }
-            }
-          } 
+      if (nrow(sf.obj) > 100 | st_geometry_type(sf.obj, by_geometry = F) == "POINT")
+        obs <<- selectmap(var1 = long, var2 = lat, obs = obs, 
+                          Xpoly = loc[1], Ypoly = loc[2], method = "point")
+      else {
+        my_points <- st_as_sf(data.frame(x = loc$x, y = loc$y), coords = c("x", "y"),
+                              crs = st_crs(sf.obj))
+        for (i in 1:length(long)) {
+          if (st_intersects(my_points, sf.obj[i, ], sparse = FALSE)) {
+            obs[i, ] <<- !obs[i, ] 
+            break
+          }
         }
+      }
       
       # graphiques
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             lablong = lablong, lablat = lablat, label = label, symbol = pch,
             method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
             legmap = legmap, legends = legends, buble = buble, criteria = criteria,
@@ -229,7 +184,6 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
     title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
           cex.sub = 0.8, font.sub = 3, col.sub = "red")
     
-    if(spdf) 
     points(long, lat, pch = 16, col = "royalblue")
     
     while(!quit) {
@@ -254,7 +208,7 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
                         Xpoly = polyX, Ypoly = polyY, method = "poly")
       
       # graphiques
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             lablong = lablong, lablat = lablat, label = label, symbol = pch,
             method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
             legmap = legmap, legends = legends, buble = buble, criteria = criteria,
@@ -265,9 +219,6 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
                 labvar = labvar, symbol = pch, couleurs = col)
     }
   }
-  
-  
-  
   
   ####################################################
   # selection d'une barre de l'histogramme
@@ -296,7 +247,7 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
       obs <<- selectstat(var1 = nb, var2 = dlist, obs = obs,
                          Xpoly = loc[1], Ypoly = loc[2], method = "nbhist", nbcol = nbcol)
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             lablong = lablong, lablat = lablat, label = label, symbol = pch,
             method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
             legmap = legmap, legends = legends, buble = buble, criteria = criteria,
@@ -312,7 +263,6 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
     }
   }
   
-  
   ####################################################
   # contour des unites spatiales
   ####################################################
@@ -321,7 +271,7 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
     if (length(carte) != 0) {
       nocart <<- !nocart
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             lablong = lablong, lablat = lablat, label = label, symbol = pch,
             method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
             legmap = legmap, legends = legends, buble = buble, criteria = criteria,
@@ -339,7 +289,7 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
   fnointer <- function() {
     if (length(criteria) != 0) {
       nointer <<- !nointer
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             lablong = lablong, lablat = lablat, label = label, symbol = pch,
             method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
             legmap = legmap, legends = legends, buble = buble, criteria = criteria,
@@ -363,14 +313,12 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
     z <<- res2$z
     legmap <<- res2$legmap
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
           lablong = lablong, lablat = lablat, label = label, symbol = pch,
           method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
           legmap = legmap, legends = legends, buble = buble, criteria = criteria,
           nointer = nointer, cbuble = z, carte = carte, nocart = nocart)
   }
-  
-  
   
   ####################################################
   # rafraichissement des graphiques
@@ -380,7 +328,7 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
     obs <<- matrix(FALSE, nrow = length(long), ncol = length(long))
     
     # graphiques
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
           lablong = lablong, lablat = lablat, label = label, symbol = pch,
           method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
           legmap = legmap, legends = legends, buble = buble, criteria = criteria,
@@ -395,8 +343,16 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
   # quitter l'application
   ####################################################
   
-  quitfunc <- function() {
-    
+  quitfunc <- function()  {
+    tkdestroy(tt)
+    assign("GeoXp.open", FALSE, envir = envir)
+    dev.off(num_graph)
+    dev.off(num_carte)
+    if(!is.na(num_supp))
+      dev.off(num_supp)
+  }
+  
+  quitfunc2 <- function() {
     fig_save <- "fig_GeoXp.pdf"
     map_save <- "map_GeoXp.pdf"
     k <- 1
@@ -405,7 +361,7 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
       k <- k + 1
     }
     pdf(fig_save)
-    graphique(var1 = nb, var2 = dlist, obs = obs, num = dev.list()[length(dev.list())], 
+    graphique(var1 = nb, var2 = dlist, obs = obs, num = num_graph, 
               bin = type, graph = "histo.nb", nbcol = nbcol, W = W,
               labvar = labvar, symbol = pch, couleurs = col)
     dev.off()
@@ -417,28 +373,31 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
     }    
     
     pdf(map_save)
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = dev.list()[length(dev.list())],
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
           lablong = lablong, lablat = lablat, label = label, symbol = pch,
           method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
           legmap = legmap, legends = legends, buble = buble, criteria = criteria,
           nointer = nointer, cbuble = z, carte = carte, nocart = nocart)
     dev.off()
     
-    
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
+    cat("Results have been saved in last.select object \n")
     cat("Map has been saved in", map_save, "\n")
     cat("Figure has been saved in", fig_save, "\n")
+    assign("last.select", which(obs), envir = envir)
     
     dev.off(num_carte)
     dev.off(num_graph)
+    if(!is.na(num_supp))
+      dev.off(num_supp)
   }
   
   ####################################################
   # Graphique de base
   ####################################################
 
-  carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte, 
+  carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             lablong = lablong, lablat = lablat, label = label, symbol = pch,
             method = "Neighbourplot3", W = W, axis = axes, cex.lab = cex.lab, 
             legmap = legmap, legends = legends, buble = buble, criteria = criteria,
@@ -507,14 +466,13 @@ histnbmap<- function(sp.obj, nb.obj, longlat = NULL, nbcol = 10, type = c("count
     tkpack(tklabel(frame3, text = "Exit", font = "Times 14",
                    foreground = "blue", background = "white"))
     
-    quit.but2 <- tkbutton(frame3, text = "Exit", command = quitfunc)
+    quit.but <- tkbutton(frame3, text = "Save results", command=quitfunc2)
+    quit.but2 <- tkbutton(frame3, text = "Exit without saving", command = quitfunc)
     
-    tkpack(quit.but2, side = "left", expand = "TRUE",
-           fill = "x")
+    tkpack(quit.but, quit.but2, side = "left", expand = "TRUE", fill = "x")
+    
     
     tkpack(frame3, expand = "TRUE", fill = "x")
-    
-    
   }
   ####################################################
   

@@ -1,88 +1,66 @@
-dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr = names(sp.obj), 
-                           criteria = NULL, carte = NULL, identify = FALSE, cex.lab = 0.8, pch = 16,
+dbledensitymap <- function(sf.obj, names.var, kernel = "triweight", 
+                           criteria = NULL, carte = NULL, identify = NULL, cex.lab = 0.8, pch = 16,
                            col = c("grey", "lightblue3"), xlab = c("", ""), ylab = "", 
                            axes = FALSE, lablong = "", lablat = "") {
 
-  # Verification of the Spatial Object sp.obj
-  class.obj <- class(sp.obj)[1]
-  spdf <- (class.obj == "SpatialPolygonsDataFrame")
-  if (substr(class.obj, 1, 7) != "Spatial") 
-    stop("sp.obj may be a Spatial object")
   
-  if (substr(class.obj,nchar(class.obj) - 8, nchar(class.obj)) != "DataFrame") 
-    stop("sp.obj should contain a data.frame")
+  ###################################################
+  ########## COMMON to ALL FUNCTIONS in GeoXp
   
-  if (!is.numeric(names.var) & length(match(names.var, names(sp.obj))) != length(names.var))
-    stop("At least one component of names.var is not included in the data.frame of sp.obj")
+  envir <- globalenv()
+  # Verification of the Spatial Object sf.obj
+  class.obj <- class(sf.obj)[1]
   
-  if (length(names.attr) != length(names(sp.obj))) 
-    stop("names.attr should be a vector of character with a length equal to the number of variable")
+  if(class.obj != "sf") 
+    stop("sf.obj may be a sf object")
+  
+  if(!(all(names.var %in% names(sf.obj))))
+    stop("At least one component of names.var is not included in the data.frame of sf.obj")
   
   # we propose to refind the same arguments used in first version of GeoXp
-  long <- coordinates(sp.obj)[, 1]
-  lat <- coordinates(sp.obj)[, 2]
+  if (st_geometry_type(sf.obj, by_geometry = F) %in% c("POINT"))
+    my_coords <- st_coordinates(st_geometry(sf.obj))
+  else
+    my_coords <- st_coordinates(st_point_on_surface(st_geometry(sf.obj)))
+  long <- my_coords[, 1]
+  lat <- my_coords[, 2]
   
-  var1 <- sp.obj@data[, names.var[1]]
-  var2 <- sp.obj@data[, names.var[2]]
-  
-  listvar <- sp.obj@data
-  listnomvar <- names.attr
+  listvar <- as.data.frame(st_drop_geometry(sf.obj))
+  listnomvar <- colnames(listvar)
   
   # for identifying the selected sites
-  if(identify)
-    label <- row.names(listvar)
+  if (!is.null(identify) && identify %in% colnames(sf.obj))
+    label <- sf.obj[[identify]]
   else
     label <- ""
   
-  # initialisation
-  obs <- vector(mode = "logical", length = length(long))
-  graph1 <- "Densityplot2"
-  graph2 <- "Densityplot2"
   nointer <- FALSE
   nocart <- FALSE
+  buble <- FALSE
   z <- NULL
   legmap <- NULL
-  interv <- NULL
-  buble <- FALSE
-  legends <- list(FALSE,FALSE,"","")
-  
-  # for the slider
-  alpha11 <- 20
-  alpha21 <- 20
-  names.slide <- c("Alpha (1st graph)", "Alpha (2nd graph)")
+  legends <- list(FALSE, FALSE, "", "")
+  labvar <- c(xlab, ylab)
   
   graphChoice <- ""
   varChoice1 <- ""
   varChoice2 <- ""
   choix <- ""
-  
-  listgraph <- c("Histogram", "Barplot", "Scatterplot")
-  
-  # options for adding a graphic with colors
-  polyX2 <- NULL
   method <- ""
-  col2 <- "blue"
-  col3 <- "lightblue3"
-  pch2 <- pch[1]
-  labmod <- ""
-  labvar1 <- c(xlab[1], ylab[1])
-  labvar2 <- c(xlab[2], ylab[2])
-  
-  # Transformation de data.frame en matrix
-  if ((length(listvar) > 0) && (dim(as.matrix(listvar))[2] == 1))
-    listvar <- as.matrix(listvar)
+  listgraph <- c("Histogram", "Barplot", "Scatterplot")
   
   # Is there a Tk window already open ?
   if (interactive()) {
-    if (!exists("GeoXp.open", envir = globalenv())) {
-      assign("GeoXp.open", TRUE, envir = globalenv())
+    if (!exists("GeoXp.open", envir = envir) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = envir)
     } else {
-      if (get("GeoXp.open", envir = globalenv())) {
+      if (get("GeoXp.open", envir = envir)) {
         stop(
           "A GeoXp function is already open. 
           Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
       } else {
-        assign("GeoXp.open", TRUE, envir = globalenv())
+        assign("GeoXp.open", TRUE, envir = envir)
       }
     }
   }
@@ -90,17 +68,45 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
   # Windows device
   if(length(dev.list()) == 0 & options("device") == "RStudioGD")
     dev.new()
-  # for the 1st density graph
+  # for graphic
   dev.new(noRStudioGD = FALSE)
   num_graph <- dev.list()[length(dev.list())]
-  # for the map
+  # for map
   dev.new(noRStudioGD = FALSE)
   num_carte <- dev.list()[length(dev.list())]
+  # number of devices
+  num_supp <- NA
+  
+  #####################################################
+  ##### Arguments proper to each function 
+  obs <- vector(mode = "logical", length = length(long))
+  interv <- NULL
+  var1 <- sf.obj[[names.var[1]]] 
+  var2 <- sf.obj[[names.var[2]]] 
+  
+  graph1 <- "Densityplot2"
+  graph2 <- "Densityplot2"
+  
+  # for the slider
+  alpha11 <- 20
+  alpha21 <- 20
+  names.slide <- c("Alpha (1st graph)", "Alpha (2nd graph)")
+  
+  # options for adding a graphic with colors
+  polyX2 <- NULL
+  labvar1 <- c(xlab[1], ylab[1])
+  labvar2 <- c(xlab[2], ylab[2])
+  
+  # if add a graphic barplot
+  labmod <- ""
+  # if colors 
+  col2 <- "blue"
+  col3 <- col[1]
+  pch2 <- pch[1]
+  
   # for the 2nd density graph 
   dev.new(noRStudioGD = FALSE)
   num_graph_2 <- dev.list()[length(dev.list())]
-  # number of devices
-  num_supp <- NA
   
   ####################################################
   # selection d'un point
@@ -138,8 +144,9 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
     title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
           cex.sub = 0.8, font.sub = 3, col.sub = "red")
     
-    if(spdf & length(long) > 75 & !buble) 
+    if (nrow(sf.obj) > 100 & st_geometry_type(sf.obj, by_geometry = F) == "POLYGON" & !buble) {
       points(long, lat, pch = 16, col = "royalblue")
+    }
     
     while(!quit) {
       dev.set(num_carte)
@@ -150,7 +157,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
       
       if (is.null(loc)) {
         quit <- TRUE
-        carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+        carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
               buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
               label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
               legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -159,23 +166,17 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
         next
       }
       
-      if (!spdf | length(long) > 75) { 
-        obs <<- selectmap(var1 = long, var2 = lat, obs = obs,
+      if (nrow(sf.obj) > 100 | st_geometry_type(sf.obj, by_geometry = F) == "POINT")
+        obs <<- selectmap(var1 = long, var2 = lat, obs = obs, 
                           Xpoly = loc[1], Ypoly = loc[2], method = "point")
-        } else {
-          if (gContains(sp.obj, SpatialPoints(cbind(loc$x, loc$y), 
-                                              proj4string = CRS(proj4string(sp.obj))))) {
-            for (i in 1:nrow(sp.obj)) {
-              if (gContains(sp.obj[i, ], SpatialPoints(cbind(loc$x, loc$y), 
-                                                       proj4string = CRS(proj4string(sp.obj))))) {
-                obs[i] <<- !obs[i]
-                break
-              }
-            }
-          } 
-        }
+      else {
+        my_points <- st_as_sf(data.frame(x = loc$x, y = loc$y), coords = c("x", "y"),
+                              crs = st_crs(sf.obj))
+        def <- as.vector(st_intersects(my_points, sf.obj, sparse = FALSE))
+        obs[def] <<- !obs[def]
+      }
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
             label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
             legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -185,9 +186,6 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
       title("ACTIVE DEVICE", cex.main = 0.8, font.main = 3, col.main = "red")
       title(sub = "To stop selection, click on the right button of the mouse and stop (for MAC, ESC)", 
             cex.sub = 0.8, font.sub = 3, col.sub = "red")
-      
-      if (spdf & length(long) > 75 & !buble) 
-        points(long, lat, pch = 16, col = "royalblue")
       
       # graphiques
       if (length(var1[obs]) > 1) {
@@ -219,8 +217,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
   # selection d'un polygone
   ####################################################
   
-  polyfunc<-function()
-  {
+  polyfunc<-function() {
     
     if ((graph1 == "Densityplot2") || (graph2 == "Densityplot2")) {
       graph1 <<- "Densityplot1"
@@ -244,8 +241,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
     title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
           cex.sub = 0.8, font.sub = 3, col.sub = "red")
     
-    if (spdf) 
-      points(long, lat, pch = 16, col = "royalblue")
+    points(long, lat, pch = 16, col = "royalblue")
     
     while (!quit) {
       dev.set(num_carte)
@@ -286,8 +282,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
               cex.sub = 0.8, font.sub = 3, col.sub = "red")
         }
       
-      
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
             label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
             legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -347,7 +342,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
             cex.sub = 0.8, font.sub = 3, col.sub = "red")
     }
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
           label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
           legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -406,7 +401,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
             cex.sub = 0.8, font.sub = 3, col.sub = "red")
     }
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
           label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
           legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -472,7 +467,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
                 cex.sub = 0.8, font.sub = 3, col.sub = "red")
         }
         
-        carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+        carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
               buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
               label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
               legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -542,7 +537,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
                 cex.sub = 0.8, font.sub = 3, col.sub = "red")
         }
         
-        carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+        carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
               buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
               label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
               legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -618,7 +613,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
               graph = "Densityplot1", labvar = labvar1, couleurs = col[1],
               kernel = kernel)
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
           label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
           legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -639,7 +634,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
   
   quitfunc <- function() {
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     dev.off(num_graph)
     dev.off(num_graph_2)
     dev.off(num_carte)
@@ -686,7 +681,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
     }    
     
     pdf(map_save)
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = dev.list()[length(dev.list())],
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = dev.list()[length(dev.list())],
           buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
           label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
           legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -710,7 +705,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
     }
     
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     cat("Results have been saved in last.select object \n")
     cat("Map has been saved in", map_save, "\n")
     cat("Figure 1 has been saved in", fig_save, "\n")
@@ -718,7 +713,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
     if(!is.na(num_supp))
       cat("Supplemental figure has been saved in", fig_supp, "\n")
     
-    assign("last.select", which(obs), envir = globalenv())
+    assign("last.select", which(obs), envir = envir)
     
     dev.off(num_carte)
     dev.off(num_graph)
@@ -733,7 +728,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
   cartfunc <- function() {
     if (length(carte) != 0) {
       nocart <<- !nocart
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
             label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
             legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -764,7 +759,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
                        icon = "warning", type = "ok")
         } else {
           res1 <- choix.couleur(graphChoice, listvar, listnomvar, 
-                                varChoice1, legends, col, pch, spdf = spdf,
+                                varChoice1, legends, col, pch, spdf = F,
                                 num_graph, num_carte)
           method <<- res1$method
           col2 <<- res1$col2
@@ -793,7 +788,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
                     obs = obs, num = num_supp, graph = graphChoice, couleurs = col3,
                     symbol = pch, labvar = c(varChoice1, varChoice2))
           
-          carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+          carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
                 buble = buble, cbuble = z, criteria = criteria, nointer = nointer, label = label,
                 symbol = pch2, couleurs = col2, carte = carte, nocart = nocart, legmap = legmap,
                 legends = legends, axis = axes, labmod = labmod, lablong = lablong, lablat = lablat,
@@ -814,7 +809,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
     if (length(criteria) != 0) {
       
       nointer <<- !nointer
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
             label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
             legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -839,7 +834,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
     z <<- res2$z
     legmap <<- res2$legmap
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
           label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
           legmap = legmap, legends = legends, axis = axes, lablong = lablong, 
@@ -859,7 +854,7 @@ dbledensitymap <- function(sp.obj, names.var, kernel = "triweight", names.attr =
                graph = graph2, labvar = labvar1, couleurs = col[1], 
                 kernel = kernel, Xpoly = NULL)
       
-   carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+   carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             buble = buble, cbuble = z, criteria = criteria, nointer = nointer,
             label = label, cex.lab = cex.lab, carte = carte, nocart = nocart, 
             legmap = legmap, legends = legends, axis = axes, lablong = lablong, 

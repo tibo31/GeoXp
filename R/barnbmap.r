@@ -1,41 +1,34 @@
-barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = FALSE, 
+barnbmap <- function(sf.obj, nb.obj, criteria = NULL, carte = NULL, identify = NULL, 
                      cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "", ylab = "", 
                      axes = FALSE, lablong = "", lablat = "") {
   
-  # Verification of the Spatial Object sp.obj
-  class.obj <- class(sp.obj)[1]
-  spdf <- (class.obj == "SpatialPolygonsDataFrame")
+  ###################################################
+  ########## COMMON to ALL FUNCTIONS in GeoXp
   
-  if(substr(class.obj, 1, 7) != "Spatial") 
-    stop("sp.obj may be a Spatial object")
+  envir <- globalenv()
+  # Verification of the Spatial Object sf.obj
+  class.obj <- class(sf.obj)[1]
   
-  # Initialisation des objets de spdep
-  nb <- nb.obj
-  W <- nb2mat(nb,zero.policy=TRUE)
-  if (!inherits(nb, "nb")) 
-    stop("Not a neighbours list")
+  if(class.obj != "sf") 
+    stop("sf.obj may be a sf object")
   
   # we propose to refind the same arguments used in first version of GeoXp
-  coords <- coordinates(sp.obj)
+  if (st_geometry_type(sf.obj, by_geometry = F) %in% c("POINT"))
+    my_coords <- st_coordinates(st_geometry(sf.obj))
+  else
+    my_coords <- st_coordinates(st_point_on_surface(st_geometry(sf.obj)))
+  long <- my_coords[, 1]
+  lat <- my_coords[, 2]
   
-  if(substr(class.obj, nchar(class.obj) - 8, nchar(class.obj)) == "DataFrame") {
-    listvar <- sp.obj@data
-    listnomvar <- names(sp.obj@data)
-  } else {
-    listvar <- NULL
-    listnomvar <- NULL
-  }
+  listvar <- as.data.frame(st_drop_geometry(sf.obj))
+  listnomvar <- colnames(listvar)
   
-  # Code which was necessary in the previous version
-  object <- nb.obj
-  
-  # for identifyng the selected sites
-  if(identify)
-    label <- row.names(listvar)
+  # for identifying the selected sites
+  if (!is.null(identify) && identify %in% colnames(sf.obj))
+    label <- sf.obj[[identify]]
   else
     label <- ""
   
-  # initialisation
   nointer <- FALSE
   nocart <- FALSE
   buble <- FALSE
@@ -44,36 +37,25 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
   legends <- list(FALSE, FALSE, "", "")
   labvar <- c(xlab, ylab)
   
-  # Transformation data.frame en matrix
-  if((length(listvar) > 0) && (dim(as.matrix(listvar))[2] == 1)) 
-    listvar <- as.matrix(listvar)
-  
-  # Initialisation des objets de spdep
-  c.nb <- card(nb)
-  n.nb <- length(nb)
-  regids <- attr(nb, "region.id")
-  
-  if (is.null(regids)) 
-    regids <- as.character(1:n.nb)
-  
-  long <- coords[, 1]
-  lat <- coords[, 2]
-  
-  obs <- matrix(FALSE, nrow = n.nb, ncol = n.nb)
-  
-  graf <- "Neighbourplot1"
+  graphChoice <- ""
+  varChoice1 <- ""
+  varChoice2 <- ""
+  choix <- ""
+  method <- ""
+  listgraph <- c("Histogram", "Barplot", "Scatterplot")
   
   # Is there a Tk window already open ?
   if (interactive()) {
-    if (!exists("GeoXp.open", envir = globalenv())) {
-      assign("GeoXp.open", TRUE, envir = globalenv())
+    if (!exists("GeoXp.open", envir = envir) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = envir)
     } else {
-      if (get("GeoXp.open", envir = globalenv())) {
+      if (get("GeoXp.open", envir = envir)) {
         stop(
           "A GeoXp function is already open. 
           Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
       } else {
-        assign("GeoXp.open", TRUE, envir = globalenv())
+        assign("GeoXp.open", TRUE, envir = envir)
       }
     }
   }
@@ -90,6 +72,26 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
   # number of devices
   num_supp <- NA
   
+  #####################################################
+  ##### Arguments proper to each function 
+  
+  # Initialisation des objets de spdep
+  nb <- nb.obj
+  W <- nb2mat(nb,zero.policy=TRUE)
+  if (!inherits(nb, "nb")) 
+    stop("Not a neighbours list")
+  
+  # Initialisation des objets de spdep
+  c.nb <- card(nb)
+  n.nb <- length(nb)
+  regids <- attr(nb, "region.id")
+  
+  if (is.null(regids)) 
+    regids <- as.character(1:n.nb)
+  
+  obs <- matrix(FALSE, nrow = n.nb, ncol = n.nb)
+  
+  graf <- "Neighbourplot1"
   
   # for colors in map and new grahics
   if(length(col) == 1)
@@ -98,6 +100,9 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
     col2 <- col
 
   col3 <- "lightblue3"
+  
+  # Code which was necessary in the previous version
+  object <- nb.obj
   
   
   ####################################################
@@ -119,10 +124,15 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
     
     while (!quit) {
       dev.set(num_carte)
+      
+      if (nrow(sf.obj) > 100 & st_geometry_type(sf.obj, by_geometry = F) == "POLYGON" & !buble) {
+        points(long, lat, pch = 16, col = "royalblue")
+      }
+      
       loc <- locator(1)
       if (is.null(loc)) {
         quit <- TRUE
-        carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+        carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
               lablong = lablong, lablat = lablat, label = label, symbol = pch, 
               method = "Neighbourplot1", W = W, axis = axes, legmap = legmap, 
               legends = legends, buble = buble, criteria = criteria, nointer = nointer, 
@@ -131,24 +141,22 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
         next
       }
       
-      if (!spdf | length(long) > 75) { 
+      if (nrow(sf.obj) > 100 | st_geometry_type(sf.obj, by_geometry = F) == "POINT")
         obs <<- selectmap(var1 = long, var2 = lat, obs = obs, 
                           Xpoly = loc[1], Ypoly = loc[2], method = "point")
-        } else {
-          if (gContains(sp.obj, SpatialPoints(cbind(loc$x, loc$y),
-                                              proj4string = CRS(proj4string(sp.obj))))) {
-            for (i in 1:length(long)) {
-              if (gContains(sp.obj[i, ], SpatialPoints(cbind(loc$x, loc$y), 
-                                                       proj4string = CRS(proj4string(sp.obj))))) {
-                obs[i, ] <<- !obs[i, ] 
-                break
-              }
-            }
-          } 
+      else {
+        my_points <- st_as_sf(data.frame(x = loc$x, y = loc$y), coords = c("x", "y"),
+                              crs = st_crs(sf.obj))
+        for (i in 1:length(long)) {
+          if (st_intersects(my_points, sf.obj[i, ], sparse = FALSE)) {
+            obs[i, ] <<- !obs[i, ] 
+            break
+          }
         }
+      }
       
       # graphiques
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, 
             method = "Neighbourplot1", W = W, axis = axes, legmap = legmap, 
             legends = legends, buble = buble, criteria = criteria, nointer = nointer, 
@@ -159,8 +167,9 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
       title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
             cex.sub = 0.8, font.sub = 3, col.sub = "red")
       
-      if(spdf & length(long) > 75 & !buble)
+      if (nrow(sf.obj) > 100 & st_geometry_type(sf.obj, by_geometry = F) == "POLYGON" & !buble) {
         points(long, lat, pch = 16, col = "royalblue")
+      }
       
       graphique(var1 = nb, obs = obs, num = num_graph, graph = "bar.nb", 
                 W = W, labvar = labvar, symbol = pch, couleurs = col)
@@ -185,15 +194,16 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
     title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
           cex.sub = 0.8, font.sub = 3, col.sub = "red")
     
-    if(spdf) 
+    if (nrow(sf.obj) > 100 & st_geometry_type(sf.obj, by_geometry = F) == "POLYGON" & !buble) {
       points(long, lat, pch = 16, col = "royalblue")
+    }
     
     while (!quit) {
       dev.set(num_carte)
       loc <- locator(1)
       if (is.null(loc)) {
         quit <- TRUE
-        carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+        carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
               lablong = lablong, lablat = lablat, label = label, symbol = pch, 
               method = "Neighbourplot1", W = W, axis = axes, legmap = legmap, 
               legends = legends, buble = buble, criteria = criteria, nointer = nointer, 
@@ -216,7 +226,7 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
                         Ypoly = polyY, method = "poly")
       
       # graphiques
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, 
             method = "Neighbourplot1", W = W, axis = axes, legmap = legmap, 
             legends = legends, buble = buble, criteria = criteria, nointer = nointer, 
@@ -264,7 +274,7 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
       title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
             cex.sub = 0.8, font.sub = 3, col.sub = "red")
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, 
             method = "Neighbourplot1", W = W, axis = axes, legmap = legmap, 
             legends = legends, buble = buble, criteria = criteria, nointer = nointer, 
@@ -281,7 +291,7 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
     if (length(carte) != 0) {
       nocart <<- !nocart
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, 
             method = "Neighbourplot1", W = W, axis = axes, legmap = legmap, 
             legends = legends, buble = buble, criteria = criteria, nointer = nointer, 
@@ -301,7 +311,7 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
     if (length(criteria) != 0) {
       nointer <<- !nointer
       
-      carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
             lablong = lablong, lablat = lablat, label = label, symbol = pch, 
             method = "Neighbourplot1", W = W, axis = axes, legmap = legmap, 
             legends = legends, buble = buble, criteria = criteria, nointer = nointer, 
@@ -326,7 +336,7 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
     z <<- res2$z
     legmap <<- res2$legmap
     
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           lablong = lablong, lablat = lablat, label = label, symbol = pch, 
           method = "Neighbourplot1", W = W, axis = axes, legmap = legmap, 
           legends = legends, buble = buble, criteria = criteria, nointer = nointer, 
@@ -343,7 +353,7 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
                    ncol = length(long))
     
     # graphiques
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           lablong = lablong, lablat = lablat, label = label, symbol = pch, 
           method = "Neighbourplot1", W = W, axis = axes, legmap = legmap, 
           legends = legends, buble = buble, criteria = criteria, nointer = nointer, 
@@ -358,8 +368,16 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
   # quitter l'application
   ####################################################
   
-  quitfunc <- function() {
-    
+  quitfunc <- function()  {
+    tkdestroy(tt)
+    assign("GeoXp.open", FALSE, envir = envir)
+    dev.off(num_graph)
+    dev.off(num_carte)
+    if(!is.na(num_supp))
+      dev.off(num_supp)
+  }
+  
+  quitfunc2 <- function() {
     fig_save <- "fig_GeoXp.pdf"
     map_save <- "map_GeoXp.pdf"
     k <- 1
@@ -368,7 +386,7 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
       k <- k + 1
     }
     pdf(fig_save)
-    graphique(var1 = nb, obs = obs, num = dev.list()[length(dev.list())], graph = "bar.nb", 
+    graphique(var1 = nb, obs = obs, num = num_graph, graph = "bar.nb", 
               W = W, labvar = labvar, symbol = pch, couleurs = col)
     dev.off()
     
@@ -379,7 +397,7 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
     }    
     
     pdf(map_save)
-    carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = dev.list()[length(dev.list())],
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
           lablong = lablong, lablat = lablat, label = label, symbol = pch, 
           method = "Neighbourplot1", W = W, axis = axes, legmap = legmap, 
           legends = legends, buble = buble, criteria = criteria, nointer = nointer, 
@@ -387,24 +405,24 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
           classe = card(object), cex.lab = cex.lab)
     dev.off()
     
-
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     cat("Results have been saved in last.select object \n")
     cat("Map has been saved in", map_save, "\n")
     cat("Figure has been saved in", fig_save, "\n")
-
-    assign("last.select", which(obs), envir = globalenv())
+    assign("last.select", which(obs), envir = envir)
     
     dev.off(num_carte)
     dev.off(num_graph)
+    if(!is.na(num_supp))
+      dev.off(num_supp)
   }
   
   ####################################################
   # Representation des graphiques
   ####################################################
 
-  carte(long = long, lat = lat, obs = obs, sp.obj = sp.obj, num = num_carte,
+  carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte,
               lablong = lablong, lablat = lablat, label = label, symbol = pch, 
               method = "Neighbourplot1", W = W, axis = axes, legmap = legmap, 
               legends = legends, buble = buble, criteria = criteria, nointer = nointer, 
@@ -473,10 +491,10 @@ barnbmap <- function(sp.obj, nb.obj, criteria = NULL, carte = NULL, identify = F
     tkpack(tklabel(frame3, text = "Exit", font = "Times 14",
                    foreground = "blue", background = "white"))
     
-    quit.but2 <- tkbutton(frame3, text = "Exit", command = quitfunc)
+    quit.but <- tkbutton(frame3, text = "Save results", command=quitfunc2)
+    quit.but2 <- tkbutton(frame3, text = "Exit without saving", command = quitfunc)
     
-    tkpack(quit.but2, side = "left", expand = "TRUE",
-           fill = "x")
+    tkpack(quit.but, quit.but2, side = "left", expand = "TRUE", fill = "x")
     
     tkpack(frame3, expand = "TRUE", fill = "x")
   }

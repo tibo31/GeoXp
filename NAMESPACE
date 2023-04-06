@@ -1,12 +1,11 @@
-import(spdep, spData, stats, tcltk, qgam)
-importFrom(rgeos, gContains)
-importFrom(rgl, bg3d, par3d, plot3d, rgl.close, rgl.postscript, rotationMatrix)
+import(sf, spdep, spData, stats, tcltk)
+importFrom(quantreg, rq, predict.rq)
+importFrom(rgl, bg3d, par3d, plot3d, close3d, rgl.postscript, rotationMatrix)
 importFrom(KernSmooth, bkde)
 importFrom(robustbase, covMcd)
-importFrom(splancs, inout)
+importFrom(sp, SpatialPolygons, Polygons, Polygon)
 importFrom(grDevices, colors, dev.list, dev.new, dev.set, dev.off, heat.colors, pdf)
 importFrom(graphics, abline, axis, barplot, boxplot, layout, legend, lines, locator, par, plot, points, polygon, rect, segments, text, title)
-importFrom(sp, coordinates, CRS, is.projected, plot, proj4string, SpatialPoints)
 export(
 angleplotmap,
 barmap,
@@ -38,14 +37,12 @@ normw,
 pcamap,
 plot3dmap,
 polyboxplotmap,
-polylist2list,
 rotation,
 scattermap,
 selectgraph,
 selectmap,
 selectstat,
 slider1,
-spdf2list,
 variocloudmap
 )
 

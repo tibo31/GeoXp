@@ -1,7 +1,7 @@
 choix.bubble <- function(buble, listvar, listnomvar, legends, 
                          num_graph, num_carte) {
 
-  if(!buble) {
+  if (!buble) {
     if ((length(listvar) != 0) && (length(listnomvar) != 0)) {
       if (listnomvar[1] != "ilocal") {
         varChoix <- choixvarfunc("Choice of variables", "Choose a variable", 
@@ -112,6 +112,7 @@ choix.bubble <- function(buble, listvar, listnomvar, legends,
     z <- NULL
     legmap <- NULL
   }
+ 
 
   return(list(buble = buble, legends = legends, legmap = legmap, z = z))
 }

@@ -330,12 +330,12 @@ if ((method == "Barplot") || (method == "barnb")) {
   if (method == "AnglePoint") {
     Xuns <- matrix(as.numeric(Xpoly), length(long), length(long))
     Yuns <- matrix(as.numeric(Ypoly), length(lat), length(lat))
-    diff<-abs(var1 - Xuns) * (max(var2) - min(var2)) + abs(var2 - Yuns) * (max(var1) - min(var1))
+    diff <- abs(var1 - Xuns) * (max(var2) - min(var2)) + 
+      abs(var2 - Yuns) * (max(var1) - min(var1))
 
-    
     # si le point selectionne est tres proche d'un point existant
     # alors la valeur logique l'observation est inverse
-    if(min(diff[diff == min(diff)]/((max(var2) - min(var2)) * (max(var1) - min(var1)))) < 0.01) {
+    if (min(diff[diff == min(diff)] / ((max(var2) - min(var2)) * (max(var1) - min(var1)))) < 0.01) {
       obs[diff == min(diff)] <- !obs[diff == min(diff)]  
     }
     return(obs)

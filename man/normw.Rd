@@ -31,14 +31,15 @@ A matrix of size \eqn{n \times n}{n x n}
 \examples{
 ###
 # data auckland
-data(auckland)
+auckland <- sf::st_read(system.file("shapes/auckland.shp", package="spData")[1])
+
 x.ext <- auckland$Easting[1:10]
 y.ext <- auckland$Northing[1:10] 
 
 # matrix based on 3 nearest neighbors
-W1<-makeneighborsw(cbind(x.ext,y.ext),method="both",m=3,d=20)
-W2<-normw(W1)
+W1 <- makeneighborsw(cbind(x.ext, y.ext), method = "both", m = 3, d = 20)
+W2 <- normw(W1)
 
-apply(W1[1:10,],1,sum)
-apply(W2[1:10,],1,sum)
+apply(W1[1:10,], 1, sum)
+apply(W2[1:10,], 1, sum)
 } 

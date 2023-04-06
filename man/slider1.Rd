@@ -7,7 +7,7 @@ Creates a scroll bar for modifying the value of a parameter.
 }
 \usage{
 slider1(fenetre, refresh.code, names.slide, minima, maxima, resolutions,
-starts, no=0)
+  starts, no = 0)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

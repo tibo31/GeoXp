@@ -21,7 +21,9 @@ selectmap <- function(var1, var2, obs, Xpoly, Ypoly, method = "") {
 
  if (method == "poly") {
    polyg <- cbind(unlist(Xpoly), unlist(Ypoly))
-   def <- inout(cbind(var1, var2), polyg, bound = TRUE)
+   pol <- st_sfc(st_polygon(list(polyg)))
+   my_points <- st_as_sf(data.frame(x = var1, y = var2), coords = c("x", "y"))
+   def <- as.vector(st_intersects(my_points, pol, sparse = FALSE))
    if (length(obs) == length(var1))
      obs[def] <- !obs[def]
    else

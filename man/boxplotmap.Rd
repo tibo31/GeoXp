@@ -3,22 +3,21 @@
 \title{Interactive boxplot and map}
 \description{
 The function \code{boxplotmap()} draws a boxplot of the given variable \code{name.var}
-and a map with site of coordinates \code{coordinates(sp.obj)}. }
+and a map with site of coordinates \code{sf.obj}. }
 
 \usage{
-boxplotmap(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL,
- carte = NULL, identify = FALSE, cex.lab = 0.8, pch = 16, col = "lightblue3", 
- xlab = "", ylab = "", axes = FALSE, lablong = "", lablat = "")
+boxplotmap(sf.obj, name.var, criteria = NULL, carte = NULL, 
+  identify = NULL, cex.lab = 0.8, pch = 16, col = "lightblue3", 
+  xlab = "", ylab = "", axes = FALSE, lablong = "", lablat = "")
 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{name.var}{a character; attribute name or column number in attribute table}
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of boolean of size the number of spatial sites, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{16 by default, symbol for selected points}
   \item{col}{"lightblue3" by default, color of bars on the boxplot}
@@ -51,24 +50,20 @@ Roger S.Bivand, Edzer J.Pebesma, Virgilio Gomez-Rubio (2009),  \emph{Applied Spa
 \examples{
 ######
 # data columbus
-require("rgdal")
-columbus <- readOGR(system.file("shapes/columbus.shp", package="spData")[1])
+require("sf")
+columbus <- st_read(system.file("shapes/columbus.shp", package="spData")[1])
 
 # a basic use of boxplotmap
 boxplotmap(columbus, "CRIME", criteria = (columbus@data$CP == 1), 
- xlab = "Crime", ylab = "Percent", identify = TRUE, cex.lab = 0.7)
+  xlab = "Crime", ylab = "Percent", identify = TRUE, cex.lab = 0.7)
 
 \dontrun{ 
 # data boston
-data(boston)
-
-# creation of a Spatial object
-boston.sp <- SpatialPoints(cbind(boston.c$LON, boston.c$LAT))
-# ... and then by integrating other variables to create SpatialPointsDataFrame
-boston.spdf <- SpatialPointsDataFrame(boston.sp, boston.c)
+require(sf)
+boston <- st_read(system.file("shapes/boston_tracts.shp", package="spData")[1])
 
 # a simple use of boxplotmap
-boxplotmap(boston.spdf, "MEDV", criteria = (boston.c$CHAS == 1))
+boxplotmap(boston, "MEDV", criteria = (boston$CHAS == 1))
 }
 }
 

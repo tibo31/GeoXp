@@ -1,70 +1,93 @@
-misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu = 0.975,
-                            names.attr = names(sp.obj), criteria = NULL, carte = NULL, identify = FALSE, cex.lab = 0.8, 
-                            pch = 16, col = "lightblue3", xlab = "degree of isolation", ylab = "Pairwise Mahalanobis distances", 
-                            axes = FALSE, lablong = "", lablat = "") {
-
-  # Verification of the Spatial Object sp.obj
-  class.obj <- class(sp.obj)[1]
+misolationmap <- function(sf.obj, nb.obj, names.var, propneighb = 0.4, chisqqu = 0.975,
+                          criteria = NULL, carte = NULL, identify = NULL, cex.lab = 0.8, 
+                          pch = 16, col = "lightblue3", xlab = "degree of isolation", 
+                          ylab = "Pairwise Mahalanobis distances", 
+                          axes = FALSE, lablong = "", lablat = "") {
   
-  if (substr(class.obj, 1, 7) != "Spatial")
-    stop("sp.obj may be a Spatial object")
+  ###################################################
+  ########## COMMON to ALL FUNCTIONS in GeoXp
   
-  if (substr(class.obj, nchar(class.obj) - 8, nchar(class.obj)) != "DataFrame")
-    stop("sp.obj should contain a data.frame")
+  envir <- globalenv()
+  # Verification of the Spatial Object sf.obj
+  class.obj <- class(sf.obj)[1]
   
-  if (!is.numeric(names.var) &
-      length(match(names.var, names(sp.obj))) != length(names.var))
-    stop("At least one component of names.var is not included in the data.frame of sp.obj")
+  if(class.obj != "sf") 
+    stop("sf.obj may be a sf object")
   
-  if (length(names.attr) != length(names(sp.obj)))
-    stop("names.attr should be a vector of character with a length equal to the number of variable")
+  # verification on attributes
+  listvar <- as.data.frame(st_drop_geometry(sf.obj))
+  listnomvar <- colnames(listvar)
+  
+  # we propose to refind the same arguments used in first version of GeoXp
+  if (st_geometry_type(sf.obj, by_geometry = F) %in% c("POINT"))
+    my_coords <- st_coordinates(st_geometry(sf.obj))
+  else
+    my_coords <- st_coordinates(st_point_on_surface(st_geometry(sf.obj)))
+  long <- my_coords[, 1]
+  lat <- my_coords[, 2]
+  
+  # for identifying the selected sites
+  if (!is.null(identify) && identify %in% colnames(sf.obj))
+    label <- sf.obj[[identify]]
+  else
+    label <- ""
+  
+  nointer <- FALSE
+  nocart <- FALSE
+  buble <- FALSE
+  z <- NULL
+  legmap <- NULL
+  legends <- list(FALSE, FALSE, "", "")
+  labvar <- c(xlab, ylab)
+  
+  graphChoice <- ""
+  varChoice1 <- ""
+  varChoice2 <- ""
+  choix <- ""
+  listgraph <- c("Histogram", "Barplot", "Scatterplot")
   
   # Is there a Tk window already open ?
   if (interactive()) {
-    if (!exists("GeoXp.open", envir = globalenv())) {
-      assign("GeoXp.open", TRUE, envir = globalenv())
+    if (!exists("GeoXp.open", envir = envir) ||
+        length(ls(envir = .TkRoot$env, all.names = TRUE)) == 2) {
+      assign("GeoXp.open", TRUE, envir = envir)
     } else {
-      if (get("GeoXp.open", envir = globalenv())) {
+      if (get("GeoXp.open", envir = envir)) {
         stop(
-          "Warning : a GeoXp function is already open. 
-          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics"
-        )
+          "A GeoXp function is already open. 
+          Please, close Tk window before calling a new GeoXp function to avoid conflict between graphics")
       } else {
-        assign("GeoXp.open", TRUE, envir = globalenv())
+        assign("GeoXp.open", TRUE, envir = envir)
       }
     }
   }
   
-  # we propose to refind the same arguments used in first version of GeoXp
-  long <- coordinates(sp.obj)[, 1]
-  lat <- coordinates(sp.obj)[, 2]
+  # Windows device
+  if(length(dev.list()) == 0 & options("device") == "RStudioGD")
+    dev.new()
+  # for graphic
+  dev.new(noRStudioGD = FALSE)
+  num_graph <- dev.list()[length(dev.list())]
+  # for map
+  dev.new(noRStudioGD = FALSE)
+  num_carte <- dev.list()[length(dev.list())]
+  # number of devices
+  num_supp <- NA
   
-  dataset <- sp.obj@data[, names.var]
+  #####################################################
+  ##### Arguments proper to each function 
+  if (is.numeric(names.var)) {
+    if (all(names.var <= ncol(listvar))) 
+      names.var <- listnomvar[names.var]
+    else
+      stop("Dimension of names.var is not good")
+  }
   
-  listvar <- sp.obj@data
-  listnomvar <- names.attr
+  if(!(all(names.var %in% names(sf.obj))))
+    stop("names.var is not included in the sf object")
   
-  # Code which was necessary in the previous version
-  if (is.null(carte) &
-      class.obj == "SpatialPolygonsDataFrame")
-    carte <- spdf2list(sp.obj)$poly
+  dataset <- listvar[, names.var]
   
-  # for identifying the selected sites
-  if(identify)
-    label <- row.names(listvar)
-  else
-    label <- ""
-  
-  # initialisation
-  xy <- cbind(long, lat)
-  nointer <- FALSE
-  nocart <- FALSE
-  buble <- FALSE
-  legends <- list(FALSE, FALSE, "", "")
-  z <- NULL
-  legmap <- NULL
-  inout = NULL
-  labvar = c(xlab, ylab)
   obs <- matrix(FALSE, nrow = length(long), ncol = length(long))
   graf <- "Neighbourplot1"
   obsref <- obs
@@ -76,27 +99,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
   W <- nb2mat(nb.obj)
   Wref <- W
   
-  # Transformation d'un data.frame en matrix
-  if ((length(listvar) > 0) &&
-      (dim(as.matrix(listvar))[2] == 1))
-    listvar <- as.matrix(listvar)
-  if ((length(dataset) > 0) &&
-      (dim(as.matrix(dataset))[2] == 1))
-    dataset <- as.matrix(dataset)
-  
-  # Windows device
-  if(length(dev.list()) == 0 & options("device") == "RStudioGD")
-    dev.new()
-  # for graphic
-  dev.new(noRStudioGD = FALSE)
-  num_graph <- dev.list()[length(dev.list())]
-  # for map
-  dev.new(noRStudioGD = FALSE)
-  num_carte <- dev.list()[length(dev.list())]
-
-  
   # calcul des matrices theta et absvar
-  
   n <- nrow(dataset)
   p <- ncol(dataset)
   
@@ -148,7 +151,6 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
   idxg <- sort(chibound, index.return = TRUE)
   
   # calcul des distances de Mahalanobis par site
-  
   rd <- sqrt(mahalanobis(dataset, center = covr$center, cov = covr$cov))
   
   pcrit <- ifelse(p <= 10, (0.24 - 0.003 * p) / sqrt(n), (0.252 - 0.0018 * p) / sqrt(n))
@@ -197,7 +199,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
       loc <- locator(1)
       if (is.null(loc)) {
         quit<-TRUE
-        carte(long = long, lat = lat, obs = obs, num = num_carte, 
+        carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
               buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
               nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
               symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
@@ -214,7 +216,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
       if (!outselect2)
         obs[!MDglobalTF, ] <<- FALSE
       
-      carte(long = long, lat = lat, obs = obs, num = num_carte, 
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
             nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
             symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
@@ -227,7 +229,6 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
                 symbol = pch, direct = propneighb)
     }
   }
-  
   
   ####################################################
   # selection d'un polygone
@@ -277,7 +278,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
         obs[!MDglobalTF, ] <<- FALSE
       
       # graphiques
-      carte(long = long, lat = lat, obs = obs, num = num_carte, 
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
             nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
             symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
@@ -335,13 +336,12 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
       title(sub = "To stop selection, click on the right button of the mouse or use ESC", 
             cex.sub = 0.8, font.sub = 3, col.sub = "red")
       
-      carte(long = long, lat = lat, obs = obs, num = num_carte, 
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
             nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
             symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
     }
   }
-  
   
   ####################################################
   # selection des outliers
@@ -393,7 +393,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
               graph = "pairwise", labvar = labvar, couleurs = col, 
               symbol = pch, direct = propneighb)
     
-    carte(long = long, lat = lat, obs = obs, num = num_carte, 
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
           buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
           nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
           symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
@@ -453,7 +453,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
               graph = "pairwise", labvar = labvar, couleurs = col, 
               symbol = pch, direct = propneighb)
     
-    carte(long = long, lat = lat, obs = obs, num = num_carte, 
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
           buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
           nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
           symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
@@ -489,7 +489,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
               graph = "pairwise", labvar = labvar, couleurs = col, 
               symbol = pch, direct = propneighb)
     
-    carte(long = long, lat = lat, obs = obs, num = num_carte, 
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
           buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
           nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
           symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
@@ -533,8 +533,11 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
     if (length(polyX) > 0) {
       lines(polyX, polyY)
       for (i in 1:length(long)) {
-        def <- inout(cbind(theta[, i], absvar[, i]),
-                     cbind(polyX, polyY), bound = TRUE)       
+        
+        my_points <- st_as_sf(data.frame(x = theta[, i], y = absvar[, i]), coords = c("x", "y"))
+        polyg <- cbind(unlist(polyX), unlist(polyY))
+        pol <- st_sfc(st_polygon(list(polyg)))
+        def <- as.vector(st_intersects(my_points, pol, sparse = FALSE))
         obs[def, i] <<- !obs[def, i]    
       }
       
@@ -548,7 +551,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
                 graph = "pairwise", labvar = labvar, couleurs = col, 
                 symbol = pch, direct = propneighb)
       
-      carte(long = long, lat = lat, obs = obs, num = num_carte, 
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
             nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
             symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
@@ -563,7 +566,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
     if (length(carte) != 0) {
       nocart <<- !nocart
 
-      carte(long = long, lat = lat, obs = obs, num = num_carte, 
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
             nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
             symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
@@ -580,7 +583,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
   SGfunc <- function() {
     obs <<- matrix(FALSE, nrow = length(long), ncol = length(long))
     
-    carte(long = long, lat = lat, obs = obs, num = num_carte, 
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
           buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
           nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
           symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
@@ -596,7 +599,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
   
   quitfunc <- function() {
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     dev.off(num_graph)
     dev.off(num_carte)
 }
@@ -623,19 +626,19 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
     }    
     
     pdf(map_save)
-    carte(long = long, lat = lat, obs = obs, num = dev.list()[length(dev.list())], 
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = dev.list()[length(dev.list())], 
           buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
           nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
           symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
     dev.off()
     
     tkdestroy(tt)
-    assign("GeoXp.open", FALSE, envir = globalenv())
+    assign("GeoXp.open", FALSE, envir = envir)
     cat("Results have been saved in last.select object \n")
     cat("Map has been saved in", map_save, "\n")
     cat("Figure has been saved in", fig_save, "\n")
 
-    assign("last.select", which(obs), envir = globalenv())
+    assign("last.select", which(obs), envir = envir)
     
     dev.off(num_carte)
     dev.off(num_graph)
@@ -650,7 +653,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
     if (length(criteria) != 0) {
       nointer <<- !nointer
       
-      carte(long = long, lat = lat, obs = obs, num = num_carte, 
+      carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
             buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
             nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
             symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends) 
@@ -681,7 +684,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
                      paste("<", round(alphab[4], 2)), "Mahalanobis")
       }
     }
-    carte(long = long, lat = lat, obs = obs, num = num_carte, 
+    carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, 
           buble = buble, criteria = criteria, nointer = nointer, cbuble = z, carte = carte,
           nocart = nocart, lablong = lablong, lablat = lablat, label = label, cex.lab = cex.lab,
           symbol = pch, method = "pairwise", axis = axes, legmap = legmap, legends = legends)
@@ -691,7 +694,7 @@ misolationmap <- function(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu =
   # Representation graphique
   ####################################################
   
-  carte(long = long, lat = lat, obs = obs, num = num_carte, lablong = lablong, lablat = lablat, 
+  carte(long = long, lat = lat, obs = obs, sf.obj = sf.obj, num = num_carte, lablong = lablong, lablat = lablat, 
         label = label, cex.lab = cex.lab, symbol = pch, method = "pairwise",
         axis = axes, legends = legends)
   

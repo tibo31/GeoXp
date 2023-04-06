@@ -8,21 +8,20 @@ It is used to detect spatial autocorrelation. Possibility to draw the empirical 
 and a robust empirical semi-variogram.}
 
 \usage{
-variocloudmap(sp.obj, name.var, bin = NULL, quantiles = TRUE,
- names.attr = names(sp.obj), criteria = NULL, carte = NULL, identify = FALSE, 
- cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "", ylab = "", axes = FALSE,
- lablong = "", lablat = "", xlim = NULL, ylim = NULL)
+variocloudmap(sf.obj, name.var, bin = NULL, quantiles = TRUE,
+  criteria = NULL, carte = NULL, identify = NULL, 
+  cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "", ylab = "", axes = FALSE,
+  lablong = "", lablat = "", xlim = NULL, ylim = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{name.var}{a character; attribute name or column number in attribute table}
   \item{bin}{a vector of numeric values where empirical variogram will be evaluated}
   \item{quantiles}{a boolean to represent the Additive Quantile Regression Smoothing}
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of boolean of size the number of Spatial Units, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{16 by default, symbol for selected points}
   \item{col}{"lightblue3" by default, color of bars on the cloud map}
@@ -73,24 +72,21 @@ Cressie N. and Hawkins D. (1980), \emph{Robust estimation of the variogram}, in 
 \keyword{spatial}
 \examples{
 #####
+require(sf)
 # Data Meuse
-data(meuse)
-
-# meuse is a data.frame object. We have to create
-# a Spatial object, by using first the longitude and latitude
-# to create Spatial Points object ...
-meuse.sp <- SpatialPoints(cbind(meuse$x,meuse$y))
-# ... and then by integrating other variables to create SpatialPointsDataFrame
-meuse.spdf <- SpatialPointsDataFrame(meuse.sp, meuse)
-
-# meuse.riv is used for contour plot
-data(meuse.riv)
+if (require(sp, quietly = TRUE)) {
+ data(meuse, package = "sp")
+ meuse_sf <- st_as_sf(meuse, coords = c("x", "y"), crs = 28992, agr = "constant")
+ data(meuse.riv, package = "sp")
+ meuse.sr <- st_as_sf(SpatialPolygons(list(Polygons(list(Polygon(meuse.riv)), 
+ "meuse.riv"))), crs = 28992)
+}
 
 # example of use of variocloudmap
 \donttest{
-variocloudmap(meuse.spdf, "zinc", quantiles = TRUE, bin = seq(0, 2000, 100),
- xlim = c(0, 2000), ylim = c(0, 500000), pch = 2, carte = meuse.riv[c(21:65, 110:153), ],
- criteria = (meuse$lime == 1))
+variocloudmap(meuse_sf, "zinc", quantiles = TRUE, bin = seq(0, 2000, 100),
+  xlim = c(0, 2000), ylim = c(0, 500000), pch = 2, carte = meuse.sr,
+  criteria = (meuse_sf$lime == 1))
  }
 }
 

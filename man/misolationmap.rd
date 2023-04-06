@@ -7,23 +7,22 @@ variables \code{names.var} between the observations and their neighbors on the y
 the x-axis and a map
 }
 \usage{
-misolationmap(sp.obj, nb.obj, names.var, propneighb = 0.4, chisqqu = 0.975,
- names.attr = names(sp.obj), criteria = NULL, carte = NULL, identify = FALSE, 
- cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "degree of isolation", 
- ylab = "Pairwise Mahalanobis distances", axes = FALSE, 
- lablong = "", lablat = "")
+misolationmap(sf.obj, nb.obj, names.var, propneighb = 0.4, chisqqu = 0.975,
+  criteria = NULL, carte = NULL, identify = NULL, 
+  cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "degree of isolation", 
+  ylab = "Pairwise Mahalanobis distances", axes = FALSE, 
+  lablong = "", lablat = "")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{nb.obj}{object of class nb}
   \item{names.var}{a vector of character; attribute names or column numbers in attribute table}
   \item{propneighb}{proportion of neighbors included in ellipsoid}
   \item{chisqqu}{value of alpha for the definition of global outliers}
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of size n of boolean which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{16 by default, symbol for selected points}
   \item{col}{color of the points on the cloud map}
@@ -61,23 +60,24 @@ just before leaving the Tk window.
 \author{Fizmoser P., Thomas-Agnan C., Ruiz-Gazen A., Laurent T.,}
 
 \examples{
-## data radarImage
-require("robustbase")
-data(radarImage)
+if (require(robustbase, quietly = TRUE)) {
+  ## data radarImage
+  require("robustbase")
+  data(radarImage)
+}
 
-# creation of a SpatialClass object
-radarImage.sp <- SpatialPoints(radarImage[1300:1573, c("X.coord", "Y.coord")])
-radarImage.spdf <- SpatialPointsDataFrame(radarImage.sp, radarImage[1300:1573,])
+# creation of a sf object
+require(sf)
+radarImage_sf <- st_as_sf(radarImage[1300:1573, ], coords = c("X.coord", "Y.coord"))
 
 # creation of a spatial weight matrix nb
-radarImage.nb <- dnearneigh(radarImage.sp, 0, 1.5)
+radarImage.nb <- spdep::dnearneigh(radarImage_sf, 0, 1.5)
 
 # example of use of misolationmap
 # The statistics are calculated by taking into account variables
 # Ag,As,Bi,Cd,Co,Cu,Ni
-misolationmap(radarImage.spdf, radarImage.nb, names.var = c("Band.1","Band.2","Band.3"),
- propneighb = 0.30, chisqqu = 0.95, identify = TRUE, cex.lab = 0.5)
-
+misolationmap(radarImage_sf, radarImage.nb, names.var = c("Band.1","Band.2","Band.3"),
+   propneighb = 0.30, chisqqu = 0.95, cex.lab = 0.5)
 }
 
 \keyword{spatial}

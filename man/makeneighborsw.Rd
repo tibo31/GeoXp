@@ -7,7 +7,7 @@ neighbors (option "neighbor" by default), based on a threshold distance (option 
 or both these 2 methods.}
 
 \usage{
-makeneighborsw(coords,method="neighbor",m=1,d,cum=TRUE)
+makeneighborsw(coords, method = "neighbor", m = 1, d, cum = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -65,22 +65,23 @@ Roger S.Bivand, Edzer J.Pebesma, Virgilio Gomez-Rubio (2009),  \emph{Applied Spa
 \examples{
 ##
 # data auckland
-data(auckland)
-coords <- cbind(auckland$Easting[1:10],auckland$Northing[1:10])
+auckland <- sf::st_read(system.file("shapes/auckland.shp", package="spData")[1])
+
+coords <- cbind(auckland$Easting[1:10], auckland$Northing[1:10])
 
 # matrix based on 5 nearest neighbors
-W<-makeneighborsw(coords,method="neighbor",m=3)
+W <- makeneighborsw(coords, method = "neighbor", m = 3)
 
 # matrix based on a threshold distance
-W1<-makeneighborsw(coords,method="distance",d=20)
+W1 <- makeneighborsw(coords, method = "distance", d = 20)
 
 # matrix based on the two methods
-W2<-makeneighborsw(coords,method="both",m=3,d=20)
+W2 <- makeneighborsw(coords, method = "both", m = 3, d = 20)
 
 # representation of the 3 spatial weight matrices
-op<-par(mfrow=c(2,2))
-plot(mat2listw(W),coords,col="lightblue1",main="neighbor")
-plot(mat2listw(W1),coords,col="lightblue2",main="distance")
-plot(mat2listw(W2),coords,col="lightblue3",main="both")
+op <- par(mfrow = c(2, 2))
+plot(mat2listw(W), coords, col = "lightblue1", main = "neighbor")
+plot(mat2listw(W1), coords, col = "lightblue2", main = "distance")
+plot(mat2listw(W2), coords, col = "lightblue3", main = "both")
 par(op)
 } 

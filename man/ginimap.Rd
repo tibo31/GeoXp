@@ -6,18 +6,17 @@ The function \code{ginimap()} computes a Lorentz curve from \code{name.var}
 and calculates the Gini Index associated to \code{name.var}.
 }
 \usage{
-ginimap(sp.obj, name.var, names.attr = names(sp.obj), criteria = NULL,
- carte = NULL, identify = FALSE, cex.lab = 0.8, pch = 16, col = "lightblue3",
- xlab = "", ylab = "", axes = FALSE, lablong = "", lablat = "")
+ginimap(sf.obj, name.var, criteria = NULL,
+  carte = NULL, identify = NULL, cex.lab = 0.8, pch = 16, col = "lightblue3",
+  xlab = "", ylab = "", axes = FALSE, lablong = "", lablat = "")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{name.var}{a character; attribute name or column number in attribute table}
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of boolean of size the number of Spatial units, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{16 by default, symbol for selected points}
   \item{col}{"lightblue3" by default, color of bars on the histogram}
@@ -50,16 +49,17 @@ It corresponds to the number of spatial units selected just before leaving the T
 \examples{
 ######
 # data eire
-require("rgdal")
-eire <- readOGR(system.file("shapes/eire.shp", package="spData")[1])
+require(sf)
+eire <- st_read(system.file("shapes/eire.shp", package="spData")[1])
+
 # a basic usage ...
 ginimap(eire, "INCOME")
 
 \dontrun{ 
 # ... with options
 ginimap(eire, "INCOME", criteria = (eire$pale == 1),
- identify = TRUE, pch = 5, col = "orange", 
- axes = TRUE, lablong = "X", lablat = "Y")
+  identify = "names", pch = 5, col = "orange", 
+  axes = TRUE, lablong = "X", lablat = "Y")
 }
 }
 

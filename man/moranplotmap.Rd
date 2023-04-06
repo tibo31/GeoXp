@@ -9,24 +9,23 @@ It also calcultes Moran's I statistic (see \code{nonnormoran}) and
 give a p-value associated to the autocorrelation test (gaussian version and permutation version). }
 
 \usage{
-moranplotmap(sp.obj, name.var, listw.obj, flower = FALSE, locmoran = FALSE, 
- names.arg = c("H.-H.", "L.-H.", "L.-L.", "H.-L."), names.attr = names(sp.obj), 
- criteria = NULL, carte = NULL, identify = FALSE, cex.lab = 0.8, pch = 16, 
+moranplotmap(sf.obj, name.var, listw.obj, flower = FALSE, locmoran = FALSE, 
+ names.arg = c("H.-H.", "L.-H.", "L.-L.", "H.-L."), 
+ criteria = NULL, carte = NULL, identify = NULL, cex.lab = 0.8, pch = 16, 
  col = "lightblue3", xlab = "", ylab = "", axes = FALSE, lablong = "", lablat = "")
 }
 
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{name.var}{a character; attribute name or column number in attribute table}
   \item{listw.obj}{object of class listw}
   \item{flower}{if TRUE, link neighbouring sites }
   \item{locmoran}{if TRUE, print local Moran's I statistic on the Moran plot}
   \item{names.arg}{names of the quadrant of the Moran plot}
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of boolean of size the number of spatial units, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{16 by default, symbol for selected points}
   \item{col}{"lightblue3" by default, color of bars on the histogram}
@@ -67,32 +66,32 @@ Jim Lesage, ``Spatial Econometrics Toolbox'', \url{http://www.spatial-econometri
 
 \examples{
 ##
+require(sf)
 # data baltimore
-data(baltimore)
+if (require(spData, quietly = TRUE)) {
+ data(baltimore, package = "spData")
+}
 
 # SpatialPoints
-baltimore.sp <- SpatialPoints(cbind(baltimore$X, baltimore$Y))
-# SpatialPointsDataFrame
-baltimore.spdf <- SpatialPointsDataFrame(baltimore.sp, baltimore)
-
+baltimore_sf <- st_as_sf(baltimore, coords = c("X", "Y"))
 # Spatial Weight Matrix
-W.nb <- knn2nb(knearneigh(baltimore.sp, k = 4))
+W.nb <- spdep::knn2nb(spdep::knearneigh(baltimore_sf, k = 4))
 # We choose a row standardized spatial weight matrix :
-W.listw <- nb2listw(W.nb, style = "W")
+W.listw <- spdep::nb2listw(W.nb, style = "W")
 
 # moranplotmap with some options
-moranplotmap(baltimore.spdf, "PRICE", W.listw, 
- flower = TRUE, locmoran = TRUE, criteria = (baltimore.spdf$AC == 1),
- identify = TRUE)
+moranplotmap(baltimore_sf, "PRICE", W.listw, 
+  flower = TRUE, locmoran = TRUE, criteria = (baltimore.spdf$AC == 1),
+  identify = "STATION")
 
 # comparison with the moran.test function
-moran.test(baltimore.spdf$PRICE,W.listw)
+spdep::moran.test(baltimore_sf$PRICE, W.listw)
  
 \dontrun{ 
 # data columbus
-require("rgdal")
-columbus <- readOGR(system.file("shapes/columbus.shp", package="spData")[1])
-col.gal.nb <- read.gal(system.file("weights/columbus.gal", package="spData")[1])
+require("sf")
+columbus <- st_read(system.file("shapes/columbus.shp", package="spData")[1])
+col.gal.nb <- spdep::read.gal(system.file("weights/columbus.gal", package="spData")[1])
 
 # use of moranplotmap with spatial weight matrix col.gal.nb :
 # 1. row-standardized

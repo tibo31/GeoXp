@@ -6,26 +6,25 @@
 \description{
 The function \code{scattermap} draws a scatterplot of the given variables indicated
 in \code{names.var} and a map with sites
-of coordinates \code{coordinates(sp.obj)}. Boxplots of each variable
+of coordinates \code{coordinates(sf.obj)}. Boxplots of each variable
 \code{names.var[1]} and \code{names.var[2]} are represented below the x-axis and y-axis.}
 
 \usage{
-scattermap(sp.obj, names.var, lin.reg = TRUE, quantiles = TRUE,
- names.attr = names(sp.obj), criteria = NULL, carte = NULL, identify = FALSE, 
- cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "", ylab = "", 
- axes = FALSE, lablong = "", lablat = "")
+scattermap(sf.obj, names.var, lin.reg = TRUE, quantiles = TRUE,
+  criteria = NULL, carte = NULL, identify = NULL, 
+  cex.lab = 0.8, pch = 16, col = "lightblue3", xlab = "", ylab = "", 
+  axes = FALSE, lablong = "", lablat = "")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sp.obj}{object of class extending Spatial-class}
+  \item{sf.obj}{object of class sf}
   \item{names.var}{a vector of two characters : 1st name corresponds to the x-variable,
   2nd name corresponds to the y-variable}
   \item{lin.reg}{If TRUE, drawing of the linear predictor for `response' in linear model}
   \item{quantiles}{a boolean to represent the Additive Quantile Regression Smoothing}
-  \item{names.attr}{names to use in panel (if different from the names of variable used in sp.obj)}
   \item{criteria}{a vector of boolean of size the number of Spatial Units, which permit to represent preselected sites with a cross, using the tcltk window}
   \item{carte}{matrix with 2 columns for drawing spatial polygonal contours : x and y coordinates of the vertices of the polygon}
-  \item{identify}{if not FALSE, identify plotted objects (currently only working for points plots). Labels for identification are the row.names of the attribute table row.names(as.data.frame(sp.obj)).}
+  \item{identify}{if not NULL, the name of the variable for identifying observations on the map}
   \item{cex.lab}{character size of label}
   \item{pch}{16 by default, symbol for selected points}
   \item{col}{"lightblue3" by default, color of bars on the histogram}
@@ -60,35 +59,29 @@ Roger S.Bivand, Edzer J.Pebesma, Virgilio Gomez-Rubio (2009),  \emph{Applied Spa
 \examples{
 ######
 # data on price indices of real estate in France
-data(immob)
-row.names(immob) <- immob$Nom
+# data on price indices of real estate in France
+data(immob, package = "GeoXp")
 
 # immob is a data.frame object. We have to create
 # a Spatial object, by using first the longitude and latitude
-# to create Spatial Points object ...
-immob.sp <- SpatialPoints(cbind(immob$longitude, immob$latitude))
-# ... and then by integrating other variables to create SpatialPointsDataFrame
-immob.spdf <- SpatialPointsDataFrame(immob.sp, immob)
-# For more details, see vignette('sp', package="sp")
-
+require(sf)
+immob.sf <- st_as_sf(immob, coords = c("longitude", "latitude"))
 # optional : we add some contours that don't correspond to the spatial unit
 # but are nice for mapping
-require("rgdal")
-midiP <- readOGR(system.file("shapes/region.shp", package="GeoXp")[1])
-cont_midiP <- spdf2list(midiP[-c(22, 23), ])$poly
+midiP <- st_read(system.file("shapes/region.shp", package="GeoXp")[1])
 
 # a example of use
-scattermap(immob.spdf, c("prix.vente", "prix.location"),
- carte = cont_midiP, xlab = "Average sell price", ylab = "Average rent price",
- identify = TRUE, cex.lab = 0.6)
+scattermap(immob.sf, c("prix.vente", "prix.location"),
+  carte = midiP, xlab = "Average sell price", ylab = "Average rent price",
+  identify = "Nom", cex.lab = 0.6)
 
 \dontrun{ 
 # data eire
-eire <- readOGR(system.file("shapes/eire.shp", package="spData")[1])
+eire <- sf::st_read(system.file("shapes/eire.shp", package="spData")[1])
 
 # example of use of scattermap
 scattermap(eire, c("ROADACC", "OWNCONS"), lin.reg = TRUE, 
- xlab = "Roads", ylab = "Consomation Rate", col = "purple")
+  xlab = "Roads", ylab = "Consomation Rate", col = "purple")
 }
 }
 
